@@ -8,9 +8,11 @@ import AngleArchitectGame from './games/AngleArchitectGame';
 import SymmetryShieldGame from './games/SymmetryShieldGame';
 import FactorFactoryGame from './games/FactorFactoryGame';
 import CargoCaptainGame from './games/CargoCaptainGame';
+import ShapeSafariGame from './games/ShapeSafariGame';
+import NumberJungleGame from './games/NumberJungleGame';
 import { RotateCcw } from 'lucide-react';
 
-type GameType = 'home' | 'rope-cutter' | 'liquid-lab' | 'fraction-bridge' | 'angle-architect' | 'symmetry-shield' | 'factor-factory' | 'cargo-captain';
+type GameType = 'home' | 'rope-cutter' | 'liquid-lab' | 'fraction-bridge' | 'angle-architect' | 'symmetry-shield' | 'factor-factory' | 'cargo-captain' | 'shape-safari' | 'number-jungle';
 
 const GameSelector: React.FC = () => {
   const [currentGame, setCurrentGame] = useState<GameType>('home');
@@ -34,6 +36,8 @@ const GameSelector: React.FC = () => {
         {currentGame === 'symmetry-shield' && <SymmetryShieldGame />}
         {currentGame === 'factor-factory' && <FactorFactoryGame />}
         {currentGame === 'cargo-captain' && <CargoCaptainGame />}
+        {currentGame === 'shape-safari' && <ShapeSafariGame />}
+        {currentGame === 'number-jungle' && <NumberJungleGame />}
       </div>
     );
   }
@@ -45,7 +49,7 @@ const GameSelector: React.FC = () => {
         <div className="text-center mb-16">
           <h1 className="text-5xl font-bold text-white mb-4">🎮 Game Arena</h1>
           <p className="text-xl text-gray-100">
-            Master CBSE Class 5 Math Concepts Through Interactive Games
+            Master CBSE Math Concepts Through Interactive Games
           </p>
         </div>
 
@@ -331,6 +335,108 @@ const GameSelector: React.FC = () => {
               <button className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 rounded-lg transition-colors">
                 Play Game →
               </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Class 1 Section */}
+        <div className="mt-16">
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-bold text-white mb-2">🌟 Class 1 Games</h2>
+            <p className="text-lg text-gray-200">Fun games for our youngest learners!</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* Shape Safari Game Card */}
+            <div
+              onClick={() => setCurrentGame('shape-safari')}
+              className="bg-white rounded-xl shadow-2xl overflow-hidden hover:shadow-3xl hover:scale-105 transition-all transform cursor-pointer group"
+            >
+              <div className="bg-gradient-to-r from-pink-400 to-purple-500 p-8 text-white">
+                <div className="text-6xl mb-4">🦁🔺🟦</div>
+                <h2 className="text-2xl font-bold mb-2">Shape Safari Adventure</h2>
+                <p className="text-sm opacity-90">Explore the World of Shapes!</p>
+              </div>
+
+              <div className="p-6">
+                <div className="mb-4">
+                  <h3 className="font-semibold text-gray-800 mb-2">📚 Concept:</h3>
+                  <p className="text-gray-600 text-sm">Shapes & Space (CBSE Class 1)</p>
+                </div>
+
+                <div className="mb-4">
+                  <h3 className="font-semibold text-gray-800 mb-2">🎯 Learn About:</h3>
+                  <ul className="text-gray-600 text-sm space-y-1">
+                    <li>🔺 2D Shapes: Circle, Square, Rectangle, Triangle</li>
+                    <li>🧊 3D Shapes: Cube, Sphere, Cone, Cylinder</li>
+                    <li>📏 Lines: Straight, Curved, Slanting</li>
+                    <li>🧭 Positions: Above, Below, Inside, Outside</li>
+                  </ul>
+                </div>
+
+                <div className="mb-6">
+                  <h3 className="font-semibold text-gray-800 mb-2">💡 Activities:</h3>
+                  <p className="text-gray-600 text-sm">
+                    Identify shapes, complete patterns, count shapes, find positions, and match shapes to objects!
+                  </p>
+                </div>
+
+                <div className="mb-4 p-3 bg-purple-100 rounded-lg border border-purple-300">
+                  <p className="text-xs text-purple-800 font-semibold">
+                    🎲 Procedurally Generated: Unique challenges every play!
+                  </p>
+                </div>
+
+                <button className="w-full bg-purple-500 hover:bg-purple-600 text-white font-bold py-3 rounded-lg transition-colors">
+                  Play Game →
+                </button>
+              </div>
+            </div>
+
+            {/* Number Jungle Game Card */}
+            <div
+              onClick={() => setCurrentGame('number-jungle')}
+              className="bg-white rounded-xl shadow-2xl overflow-hidden hover:shadow-3xl hover:scale-105 transition-all transform cursor-pointer group"
+            >
+              <div className="bg-gradient-to-r from-green-400 to-emerald-500 p-8 text-white">
+                <div className="text-6xl mb-4">🌴🐒🔢</div>
+                <h2 className="text-2xl font-bold mb-2">Number Jungle Explorer</h2>
+                <p className="text-sm opacity-90">Learn Numbers 1-100!</p>
+              </div>
+
+              <div className="p-6">
+                <div className="mb-4">
+                  <h3 className="font-semibold text-gray-800 mb-2">📚 Concept:</h3>
+                  <p className="text-gray-600 text-sm">Numbers from One to Hundred (CBSE Class 1)</p>
+                </div>
+
+                <div className="mb-4">
+                  <h3 className="font-semibold text-gray-800 mb-2">🎯 Learn About:</h3>
+                  <ul className="text-gray-600 text-sm space-y-1">
+                    <li>🔢 Count objects from 1 to 100</li>
+                    <li>🔗 Match numbers to quantities</li>
+                    <li>📈 Before & After numbers</li>
+                    <li>⚖️ Compare quantities (more/less)</li>
+                  </ul>
+                </div>
+
+                <div className="mb-6">
+                  <h3 className="font-semibold text-gray-800 mb-2">💡 Activities:</h3>
+                  <p className="text-gray-600 text-sm">
+                    Count jungle animals, find missing numbers, tap the number, and number sequences!
+                  </p>
+                </div>
+
+                <div className="mb-4 p-3 bg-green-100 rounded-lg border border-green-300">
+                  <p className="text-xs text-green-800 font-semibold">
+                    🎲 Procedurally Generated: Unique challenges every play!
+                  </p>
+                </div>
+
+                <button className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 rounded-lg transition-colors">
+                  Play Game →
+                </button>
+              </div>
             </div>
           </div>
         </div>
