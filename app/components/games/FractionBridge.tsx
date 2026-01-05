@@ -1,11 +1,12 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { motion } from 'motion/react';
 import { useFractionBridgeStore } from '@/app/store/useFractionBridgeStore';
 import { submitTelemetry } from '@/app/utils/gameUtils';
 import BridgeZone from './BridgeZone';
 import { RotateCcw, CheckCircle, AlertCircle, Zap } from 'lucide-react';
-import { motion } from 'framer-motion';
+
 
 const FractionBridgeGame: React.FC = () => {
   const {

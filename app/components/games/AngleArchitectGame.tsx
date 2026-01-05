@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useSpring, animated, config } from '@react-spring/web';
+import { motion } from 'motion/react';
 import { RotateCcw, Play, Zap } from 'lucide-react';
-import { motion } from 'framer-motion';
+
 import { useAngleArchitectStore } from '@/app/store/useAngleArchitectStore';
 import { submitTelemetry } from '@/app/utils/gameUtils';
 import AngleArchitectCanvas from './AngleArchitectCanvas';
@@ -42,12 +42,6 @@ const AngleArchitectGame: React.FC = () => {
       return () => clearTimeout(celebrationTimer);
     }
   }, [gameCompleted, gameState, celebrationStarted, startCelebration]);
-
-  // Walker animation (character crossing bridge)
-  const walkerSpring = useSpring({
-    x: gameCompleted ? 85 : 0,
-    config: { duration: 2000 },
-  });
 
   const handleStartGame = (level: 'direct' | 'blind') => {
     setSelectedLevel(level);

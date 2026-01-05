@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { RotateCcw, Zap, RefreshCw } from 'lucide-react';
 import { useSymmetryShieldStore } from '@/app/store/useSymmetryShieldStore';
 import { submitTelemetry } from '@/app/utils/gameUtils';

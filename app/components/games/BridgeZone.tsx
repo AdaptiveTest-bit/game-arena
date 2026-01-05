@@ -15,7 +15,7 @@ import {
   sortableKeyboardCoordinates,
   horizontalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import { motion } from 'framer-motion';
+
 import Plank from './Plank';
 
 interface BridgeZoneProps {
@@ -80,22 +80,9 @@ const BridgeZone: React.FC<BridgeZoneProps> = ({
     // This is handled by not matching any over condition
   };
 
-  const shakeVariants = {
-    shake: {
-      x: [0, -5, 5, -5, 5, 0],
-      transition: {
-        duration: 0.5,
-        repeat: 1,
-      },
-    },
-  };
-
   const getPlankById = (id: string) => {
     return planks.find((p) => p.id === id);
   };
-
-  // Combine all plank IDs for the global DndContext
-  const allPlankIds = planks.map((p) => p.id);
 
   return (
     <DndContext
@@ -124,11 +111,10 @@ const BridgeZone: React.FC<BridgeZoneProps> = ({
         </div>
 
         {/* Bridge zone with shake animation */}
-        <motion.div
-          variants={shakeVariants}
-          animate={isShaking ? 'shake' : 'initial'}
+        <div
           className={`
             p-6 rounded-lg border-4 border-dashed transition-all
+            ${isShaking ? 'animate-shake' : ''}
             ${
               currentOrder.length > 0
                 ? 'border-yellow-600 bg-yellow-50'
@@ -164,7 +150,7 @@ const BridgeZone: React.FC<BridgeZoneProps> = ({
               )}
             </div>
           </SortableContext>
-        </motion.div>
+        </div>
 
         {/* Available planks */}
         <div>

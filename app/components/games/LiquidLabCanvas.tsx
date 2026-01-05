@@ -1,8 +1,7 @@
 'use client';
 
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef } from 'react';
 import { Stage, Layer, Rect, Text, Line } from 'react-konva';
-import { useSpring, animated, config } from '@react-spring/web';
 import { useLiquidGameStore } from '@/app/store/useLiquidGameStore';
 import Konva from 'konva';
 

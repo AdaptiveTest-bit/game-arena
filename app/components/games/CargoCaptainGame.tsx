@@ -1,12 +1,12 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { motion } from 'motion/react';
 import { useCargoCaptainStore } from '@/app/store/useCargoCaptainStore';
 import { CargoCaptainCanvas } from './CargoCaptainCanvas';
 import { submitTelemetry } from '@/app/utils/gameUtils';
-import { motion } from 'framer-motion';
+
 import { RotateCcw, Copy, CheckCircle } from 'lucide-react';
-import { useSpring, animated } from '@react-spring/web';
 
 export default function CargoCaptainGame() {
   const store = useCargoCaptainStore();
@@ -37,11 +37,7 @@ export default function CargoCaptainGame() {
   if (store.gameState === 'menu') {
     return (
       <div className="min-h-screen w-full bg-gradient-to-br from-slate-900 to-slate-950 flex items-center justify-center p-4">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="max-w-2xl w-full"
-        >
+        <div className="max-w-2xl w-full animate-fade-in">
           <div className="bg-slate-800 rounded-2xl p-8 border border-slate-700 shadow-2xl">
             {/* Header */}
             <div className="text-center mb-8">
@@ -106,16 +102,14 @@ export default function CargoCaptainGame() {
             </div>
 
             {/* Start Button */}
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+            <button
               onClick={() => store.generateLevel()}
-              className="w-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-bold py-3 px-8 rounded-lg shadow-lg transition"
+              className="w-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-bold py-3 px-8 rounded-lg shadow-lg transition hover:scale-105 active:scale-95"
             >
               ⚓ Set Sail!
-            </motion.button>
+            </button>
           </div>
-        </motion.div>
+        </div>
       </div>
     );
   }
@@ -126,11 +120,7 @@ export default function CargoCaptainGame() {
 
     return (
       <div className="min-h-screen w-full bg-gradient-to-br from-slate-900 to-slate-950 p-6 flex items-center justify-center">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="max-w-2xl w-full"
-        >
+        <div className="max-w-2xl w-full animate-fade-in">
           <div className="bg-slate-800 rounded-2xl p-8 border border-slate-700 shadow-2xl">
             {/* Header */}
             <div className="text-center mb-8">
@@ -164,9 +154,7 @@ export default function CargoCaptainGame() {
                     placeholder="Enter your guess (e.g., 24)"
                     className="flex-1 bg-slate-700 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400"
                   />
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
+                  <button
                     onClick={() => {
                       const guess = parseInt(guessInput);
                       if (!isNaN(guess)) {
@@ -174,10 +162,10 @@ export default function CargoCaptainGame() {
                         store.submitGuess();
                       }
                     }}
-                    className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-bold py-3 px-8 rounded-lg shadow-lg transition"
+                    className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-bold py-3 px-8 rounded-lg shadow-lg transition hover:scale-105 active:scale-95"
                   >
                     Submit Guess
-                  </motion.button>
+                  </button>
                 </div>
               </div>
 
@@ -189,7 +177,7 @@ export default function CargoCaptainGame() {
               </div>
             </div>
           </div>
-        </motion.div>
+        </div>
       </div>
     );
   }
@@ -229,10 +217,8 @@ export default function CargoCaptainGame() {
             <div className="space-y-4">
               {/* Estimation Result */}
               {store.volumeGuess !== null && (
-                <motion.div
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className={`rounded-xl p-4 border ${
+                <div
+                  className={`rounded-xl p-4 border animate-fade-in ${
                     store.guessCorrect
                       ? 'bg-emerald-900/30 border-emerald-700/50'
                       : 'bg-amber-900/30 border-amber-700/50'
@@ -254,7 +240,7 @@ export default function CargoCaptainGame() {
                       <p className="text-emerald-300 text-sm font-bold">🏅 Captain's Badge Earned!</p>
                     </div>
                   )}
-                </motion.div>
+                </div>
               )}
 
               {/* Layer Progress */}
@@ -298,62 +284,52 @@ export default function CargoCaptainGame() {
                 {layerComplete ? (
                   <>
                     {store.currentLayer === store.containerHeight - 1 ? (
-                      <motion.button
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
+                      <button
                         onClick={() => {
                           store.advanceToNextLayer();
                         }}
-                        className="w-full bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600 text-white font-bold py-3 px-4 rounded-lg shadow-lg transition flex items-center justify-center gap-2"
+                        className="w-full bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600 text-white font-bold py-3 px-4 rounded-lg shadow-lg transition hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
                       >
                         <CheckCircle size={18} />
                         Complete Packing
-                      </motion.button>
+                      </button>
                     ) : (
                       <>
-                        <motion.button
-                          whileHover={{ scale: 1.02 }}
-                          whileTap={{ scale: 0.98 }}
+                        <button
                           onClick={() => store.replicateLayer()}
-                          className="w-full bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white font-bold py-3 px-4 rounded-lg shadow-lg transition flex items-center justify-center gap-2"
+                          className="w-full bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white font-bold py-3 px-4 rounded-lg shadow-lg transition hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
                         >
                           <Copy size={18} />
                           Replicate Layer (Auto-fill remaining)
-                        </motion.button>
+                        </button>
 
-                        <motion.button
-                          whileHover={{ scale: 1.02 }}
-                          whileTap={{ scale: 0.98 }}
+                        <button
                           onClick={() => store.advanceToNextLayer()}
-                          className="w-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-bold py-3 px-4 rounded-lg shadow-lg transition flex items-center justify-center gap-2"
+                          className="w-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-bold py-3 px-4 rounded-lg shadow-lg transition hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
                         >
                           <CheckCircle size={18} />
                           Next Layer
-                        </motion.button>
+                        </button>
                       </>
                     )}
                   </>
                 ) : (
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
+                  <button
                     disabled
                     className="w-full bg-slate-700 text-slate-400 font-bold py-3 px-4 rounded-lg shadow-lg cursor-not-allowed opacity-50 transition flex items-center justify-center gap-2"
                   >
                     <CheckCircle size={18} />
                     Fill layer to continue...
-                  </motion.button>
+                  </button>
                 )}
 
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
+                <button
                   onClick={() => store.resetCurrentLayer()}
-                  className="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition flex items-center justify-center gap-2"
+                  className="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
                 >
                   <RotateCcw size={18} />
                   Reset Layer
-                </motion.button>
+                </button>
               </div>
 
               {/* Info */}
@@ -383,12 +359,12 @@ export default function CargoCaptainGame() {
             initial={{
               opacity: 1,
               y: -20,
-              x: Math.random() * window.innerWidth,
+              x: Math.random() * (typeof window !== 'undefined' ? window.innerWidth : 800),
               rotate: 0,
             }}
             animate={{
               opacity: 0,
-              y: window.innerHeight + 100,
+              y: (typeof window !== 'undefined' ? window.innerHeight : 600) + 100,
               rotate: 360,
             }}
             transition={{
@@ -404,8 +380,8 @@ export default function CargoCaptainGame() {
 
         {/* Modal */}
         <motion.div
-          initial={{ opacity: 0, backdropFilter: 'blur(0px)' }}
-          animate={{ opacity: 1, backdropFilter: 'blur(8px)' }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
           className="relative z-10 max-w-md w-full"
         >
           <motion.div
