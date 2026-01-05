@@ -8,9 +8,16 @@ import AngleArchitectGame from './games/AngleArchitectGame';
 import SymmetryShieldGame from './games/SymmetryShieldGame';
 import FactorFactoryGame from './games/FactorFactoryGame';
 import CargoCaptainGame from './games/CargoCaptainGame';
+import PatternDetectiveGame from './games/PatternDetectiveGame';
+import OceanEmpireGame from './games/OceanEmpireGame';
+import TreasureMapGame from './games/TreasureMapGame';
+import BeachSafariGame from './games/BeachSafariGame';
+import ShapeCityGame from './games/ShapeCityGame';
+import WeightWarehouseGame from './games/WeightWarehouseGame';
+import ShadowStoryGame from './games/ShadowStoryGame';
 import { RotateCcw } from 'lucide-react';
 
-type GameType = 'home' | 'rope-cutter' | 'liquid-lab' | 'fraction-bridge' | 'angle-architect' | 'symmetry-shield' | 'factor-factory' | 'cargo-captain';
+type GameType = 'home' | 'rope-cutter' | 'liquid-lab' | 'fraction-bridge' | 'angle-architect' | 'symmetry-shield' | 'factor-factory' | 'cargo-captain' | 'pattern-detective' | 'ocean-empire' | 'treasure-map' | 'beach-safari' | 'shape-city' | 'weight-warehouse' | 'shadow-story';
 
 const GameSelector: React.FC = () => {
   const [currentGame, setCurrentGame] = useState<GameType>('home');
@@ -34,6 +41,13 @@ const GameSelector: React.FC = () => {
         {currentGame === 'symmetry-shield' && <SymmetryShieldGame />}
         {currentGame === 'factor-factory' && <FactorFactoryGame />}
         {currentGame === 'cargo-captain' && <CargoCaptainGame />}
+        {currentGame === 'pattern-detective' && <PatternDetectiveGame />}
+        {currentGame === 'ocean-empire' && <OceanEmpireGame />}
+        {currentGame === 'treasure-map' && <TreasureMapGame />}
+        {currentGame === 'beach-safari' && <BeachSafariGame />}
+        {currentGame === 'shape-city' && <ShapeCityGame onBack={() => setCurrentGame('home')} />}
+        {currentGame === 'weight-warehouse' && <WeightWarehouseGame />}
+        {currentGame === 'shadow-story' && <ShadowStoryGame onBack={() => setCurrentGame('home')} />}
       </div>
     );
   }
@@ -329,6 +343,307 @@ const GameSelector: React.FC = () => {
               </div>
 
               <button className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 rounded-lg transition-colors">
+                Play Game →
+              </button>
+            </div>
+          </div>
+
+          {/* Pattern Detective Game Card */}
+          <div
+            onClick={() => setCurrentGame('pattern-detective')}
+            className="bg-white rounded-xl shadow-2xl overflow-hidden hover:shadow-3xl hover:scale-105 transition-all transform cursor-pointer group"
+          >
+            <div className="bg-gradient-to-r from-purple-500 to-indigo-600 p-8 text-white">
+              <div className="text-6xl mb-4">🔍</div>
+              <h2 className="text-2xl font-bold mb-2">Pattern Detective</h2>
+              <p className="text-sm opacity-90">Master Number Patterns</p>
+            </div>
+
+            <div className="p-6">
+              <div className="mb-4">
+                <h3 className="font-semibold text-gray-800 mb-2">📚 Concept:</h3>
+                <p className="text-gray-600 text-sm">Number Patterns & Sequences</p>
+              </div>
+
+              <div className="mb-4">
+                <h3 className="font-semibold text-gray-800 mb-2">🎯 Problem:</h3>
+                <p className="text-gray-600 text-sm">
+                  "Detective! Analyze patterns, find missing numbers, and create your own sequences."
+                </p>
+              </div>
+
+              <div className="mb-6">
+                <h3 className="font-semibold text-gray-800 mb-2">💡 Task:</h3>
+                <p className="text-gray-600 text-sm">
+                  Complete 3 phases: Discovery (find missing), Builder (construct sequence), Creator (design your own).
+                </p>
+              </div>
+
+              <div className="mb-4 p-3 bg-purple-100 rounded-lg border border-purple-300">
+                <p className="text-xs text-purple-800 font-semibold">
+                  🎲 Procedurally Generated: Add, subtract, or multiply patterns!
+                </p>
+              </div>
+
+              <button className="w-full bg-purple-500 hover:bg-purple-600 text-white font-bold py-3 rounded-lg transition-colors">
+                Play Game →
+              </button>
+            </div>
+          </div>
+
+          {/* Ocean Empire Game Card */}
+          <div
+            onClick={() => setCurrentGame('ocean-empire')}
+            className="bg-white rounded-xl shadow-2xl overflow-hidden hover:shadow-3xl hover:scale-105 transition-all transform cursor-pointer group"
+          >
+            <div className="bg-gradient-to-r from-blue-600 to-cyan-500 p-8 text-white">
+              <div className="text-6xl mb-4">🐟</div>
+              <h2 className="text-2xl font-bold mb-2">Ocean Number Empire</h2>
+              <p className="text-sm opacity-90">Master Large Numbers (Hard)</p>
+            </div>
+
+            <div className="p-6">
+              <div className="mb-4">
+                <h3 className="font-semibold text-gray-800 mb-2">📚 Concept:</h3>
+                <p className="text-gray-600 text-sm">Large Numbers - Lakhs & Crores (Indian System)</p>
+              </div>
+
+              <div className="mb-4">
+                <h3 className="font-semibold text-gray-800 mb-2">🎯 Problem:</h3>
+                <p className="text-gray-600 text-sm">
+                  "Marine biologist! Track fish populations using 7-8 digit numbers."
+                </p>
+              </div>
+
+              <div className="mb-6">
+                <h3 className="font-semibold text-gray-800 mb-2">💡 Task:</h3>
+                <p className="text-gray-600 text-sm">
+                  3 Phases: Place Value Sorting, Mental Math Operations, Population Comparison.
+                </p>
+              </div>
+
+              <div className="mb-4 p-3 bg-blue-100 rounded-lg border border-blue-300">
+                <p className="text-xs text-blue-800 font-semibold">
+                  🎲 The Fish Tale Chapter - Hard Level Challenge!
+                </p>
+              </div>
+
+              <button className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 rounded-lg transition-colors">
+                Play Game →
+              </button>
+            </div>
+          </div>
+
+          {/* Treasure Map Navigator Game Card */}
+          <div
+            onClick={() => setCurrentGame('treasure-map')}
+            className="bg-white rounded-xl shadow-2xl overflow-hidden hover:shadow-3xl hover:scale-105 transition-all transform cursor-pointer group"
+          >
+            <div className="bg-gradient-to-r from-amber-400 to-orange-500 p-8 text-white">
+              <div className="text-6xl mb-4">🗺️</div>
+              <h2 className="text-2xl font-bold mb-2">Treasure Map Navigator</h2>
+              <p className="text-sm opacity-90">Master Coordinates & Maps</p>
+            </div>
+
+            <div className="p-6">
+              <div className="mb-4">
+                <h3 className="font-semibold text-gray-800 mb-2">📚 Concept:</h3>
+                <p className="text-gray-600 text-sm">Introduction to Coordinates and Maps</p>
+              </div>
+
+              <div className="mb-4">
+                <h3 className="font-semibold text-gray-800 mb-2">🎯 Problem:</h3>
+                <p className="text-gray-600 text-sm">
+                  "Explorer! Navigate treasure maps using (X, Y) coordinates."
+                </p>
+              </div>
+
+              <div className="mb-6">
+                <h3 className="font-semibold text-gray-800 mb-2">💡 Task:</h3>
+                <p className="text-gray-600 text-sm">
+                  3 Phases: Plot Landmarks, Navigate Paths, Calculate Grid Distances.
+                </p>
+              </div>
+
+              <div className="mb-4 p-3 bg-amber-100 rounded-lg border border-amber-300">
+                <p className="text-xs text-amber-800 font-semibold">
+                  🎲 Mapping Your Way Chapter - Hard Level Challenge!
+                </p>
+              </div>
+
+              <button className="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 rounded-lg transition-colors">
+                Play Game →
+              </button>
+            </div>
+          </div>
+
+          {/* Beach Shape Safari Game Card */}
+          <div
+            onClick={() => setCurrentGame('beach-safari')}
+            className="bg-white rounded-xl shadow-2xl overflow-hidden hover:shadow-3xl hover:scale-105 transition-all transform cursor-pointer group"
+          >
+            <div className="bg-gradient-to-r from-cyan-400 to-teal-500 p-8 text-white">
+              <div className="text-6xl mb-4">🏖️</div>
+              <h2 className="text-2xl font-bold mb-2">Beach Shape Safari</h2>
+              <p className="text-sm opacity-90">Learn Shapes, Length & Counting</p>
+            </div>
+
+            <div className="p-6">
+              <div className="mb-4">
+                <h3 className="font-semibold text-gray-800 mb-2">📚 Concept:</h3>
+                <p className="text-gray-600 text-sm">Introduction to Length, Shapes, Counting & Comparing</p>
+              </div>
+
+              <div className="mb-4">
+                <h3 className="font-semibold text-gray-800 mb-2">🎯 Problem:</h3>
+                <p className="text-gray-600 text-sm">
+                  "Help Coco the Crab sort beach treasures by shape and size!"
+                </p>
+              </div>
+
+              <div className="mb-6">
+                <h3 className="font-semibold text-gray-800 mb-2">💡 Task:</h3>
+                <p className="text-gray-600 text-sm">
+                  4 Phases: Shape Sorting, Length Comparison, Bucket Counting, Balance Scale.
+                </p>
+              </div>
+
+              <div className="mb-4 p-3 bg-cyan-100 rounded-lg border border-cyan-300">
+                <p className="text-xs text-cyan-800 font-semibold">
+                  🎲 A Day at the Beach Chapter - CBSE Class 2!
+                </p>
+              </div>
+
+              <button className="w-full bg-teal-500 hover:bg-teal-600 text-white font-bold py-3 rounded-lg transition-colors">
+                Play Game →
+              </button>
+            </div>
+          </div>
+
+          {/* Shape City Builder Game Card */}
+          <div
+            onClick={() => setCurrentGame('shape-city')}
+            className="bg-white rounded-xl shadow-2xl overflow-hidden hover:shadow-3xl hover:scale-105 transition-all transform cursor-pointer group"
+          >
+            <div className="bg-gradient-to-r from-indigo-500 to-purple-600 p-8 text-white">
+              <div className="text-6xl mb-4">🏙️</div>
+              <h2 className="text-2xl font-bold mb-2">Shape City Builder</h2>
+              <p className="text-sm opacity-90">Shapes & Counting in Groups</p>
+            </div>
+
+            <div className="p-6">
+              <div className="mb-4">
+                <h3 className="font-semibold text-gray-800 mb-2">📚 Concept:</h3>
+                <p className="text-gray-600 text-sm">Shapes Around Us & Counting in Groups</p>
+              </div>
+
+              <div className="mb-4">
+                <h3 className="font-semibold text-gray-800 mb-2">🎯 Problem:</h3>
+                <p className="text-gray-600 text-sm">
+                  "Help Mayor Bot build a city by finding shapes and counting in groups!"
+                </p>
+              </div>
+
+              <div className="mb-6">
+                <h3 className="font-semibold text-gray-800 mb-2">💡 Task:</h3>
+                <p className="text-gray-600 text-sm">
+                  4 Phases: Shape Detective, Group Counter, Pattern Builder, City Constructor.
+                </p>
+              </div>
+
+              <div className="mb-4 p-3 bg-purple-100 rounded-lg border border-purple-300">
+                <p className="text-xs text-purple-800 font-semibold">
+                  🎲 Shapes Around Us + Counting in Groups - CBSE Class 5!
+                </p>
+              </div>
+
+              <button className="w-full bg-purple-500 hover:bg-purple-600 text-white font-bold py-3 rounded-lg transition-colors">
+                Play Game →
+              </button>
+            </div>
+          </div>
+
+          {/* Weight Warehouse Game Card */}
+          <div
+            onClick={() => setCurrentGame('weight-warehouse')}
+            className="bg-white rounded-xl shadow-2xl overflow-hidden hover:shadow-3xl hover:scale-105 transition-all transform cursor-pointer group"
+          >
+            <div className="bg-gradient-to-r from-amber-500 to-orange-600 p-8 text-white">
+              <div className="text-6xl mb-4">🏗️</div>
+              <h2 className="text-2xl font-bold mb-2">Weight Warehouse</h2>
+              <p className="text-sm opacity-90">Cargo Loading Challenge</p>
+            </div>
+
+            <div className="p-6">
+              <div className="mb-4">
+                <h3 className="font-semibold text-gray-800 mb-2">📚 Concept:</h3>
+                <p className="text-gray-600 text-sm">Fun with Numbers - How Much Can You Carry?</p>
+              </div>
+
+              <div className="mb-4">
+                <h3 className="font-semibold text-gray-800 mb-2">🎯 Problem:</h3>
+                <p className="text-gray-600 text-sm">
+                  "Help Weighty the Forklift load trucks, balance scales, and plan deliveries!"
+                </p>
+              </div>
+
+              <div className="mb-6">
+                <h3 className="font-semibold text-gray-800 mb-2">💡 Task:</h3>
+                <p className="text-gray-600 text-sm">
+                  4 Phases: Cargo Loading, Weight Balancing, Number Breaking, Delivery Planning.
+                </p>
+              </div>
+
+              <div className="mb-4 p-3 bg-amber-100 rounded-lg border border-amber-300">
+                <p className="text-xs text-amber-800 font-semibold">
+                  🎲 Fun with Numbers Chapter - CBSE Class 5!
+                </p>
+              </div>
+
+              <button className="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 rounded-lg transition-colors">
+                Play Game →
+              </button>
+            </div>
+          </div>
+
+          {/* Shadow Story Game Card */}
+          <div
+            onClick={() => setCurrentGame('shadow-story')}
+            className="bg-white rounded-xl shadow-2xl overflow-hidden hover:shadow-3xl hover:scale-105 transition-all transform cursor-pointer group"
+          >
+            <div className="bg-gradient-to-r from-purple-600 to-indigo-800 p-8 text-white">
+              <div className="text-6xl mb-4">🌙</div>
+              <h2 className="text-2xl font-bold mb-2">Shadow Story</h2>
+              <p className="text-sm opacity-90">The Shape Collector</p>
+            </div>
+
+            <div className="p-6">
+              <div className="mb-4">
+                <h3 className="font-semibold text-gray-800 mb-2">📚 Concept:</h3>
+                <p className="text-gray-600 text-sm">Counting in Tens + 2D Shapes (Place Value)</p>
+              </div>
+
+              <div className="mb-4">
+                <h3 className="font-semibold text-gray-800 mb-2">🎯 Problem:</h3>
+                <p className="text-gray-600 text-sm">
+                  "Help Lumina find shapes, bundle them in 10s, and count the Shadow Village!"
+                </p>
+              </div>
+
+              <div className="mb-6">
+                <h3 className="font-semibold text-gray-800 mb-2">💡 Task:</h3>
+                <p className="text-gray-600 text-sm">
+                  4 Phases: Shadow Spotter, Bundle Builder, Place Value Palace, Village Counter.
+                </p>
+              </div>
+
+              <div className="mb-4 p-3 bg-purple-100 rounded-lg border border-purple-300">
+                <p className="text-xs text-purple-800 font-semibold">
+                  🎲 Counting in Tens Chapter - CBSE Class 2!
+                </p>
+              </div>
+
+              <button className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 rounded-lg transition-colors">
                 Play Game →
               </button>
             </div>

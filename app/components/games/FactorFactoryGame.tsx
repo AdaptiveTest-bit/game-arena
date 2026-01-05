@@ -1,10 +1,10 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { motion } from 'motion/react';
 import { useFactorFactoryStore } from '@/app/store/useFactorFactoryStore';
 import { FactorFactoryCanvas } from './FactorFactoryCanvas';
 import { submitTelemetry } from '@/app/utils/gameUtils';
-import { motion } from 'framer-motion';
 import { RotateCcw, Zap } from 'lucide-react';
 
 export default function FactorFactoryGame() {
@@ -36,11 +36,7 @@ export default function FactorFactoryGame() {
   if (store.gameState === 'menu') {
     return (
       <div className="min-h-screen w-full bg-gradient-to-br from-slate-900 to-slate-950 flex items-center justify-center p-4">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="max-w-2xl w-full"
-        >
+        <div className="max-w-2xl w-full animate-fade-in">
           <div className="bg-slate-800 rounded-2xl p-8 border border-slate-700 shadow-2xl">
             {/* Header */}
             <div className="text-center mb-8">
@@ -106,22 +102,18 @@ export default function FactorFactoryGame() {
 
             {/* Start Button */}
             <div className="flex gap-4 justify-center">
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+              <button
                 onClick={() => store.startGame(12, false)}
-                className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold py-3 px-8 rounded-lg shadow-lg transition"
+                className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold py-3 px-8 rounded-lg shadow-lg transition hover:scale-105 active:scale-95"
               >
                 ▶ Start Game (Normal Mode)
-              </motion.button>
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+              </button>
+              <button
                 onClick={() => store.startGame(12, true)}
-                className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold py-3 px-8 rounded-lg shadow-lg transition"
+                className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold py-3 px-8 rounded-lg shadow-lg transition hover:scale-105 active:scale-95"
               >
                 🔐 Strict Mode
-              </motion.button>
+              </button>
             </div>
 
             {/* Mode Description */}
@@ -129,7 +121,7 @@ export default function FactorFactoryGame() {
               <strong>Normal:</strong> 3×4 and 4×3 count as one | <strong>Strict:</strong> Find all ordered pairs
             </p>
           </div>
-        </motion.div>
+        </div>
       </div>
     );
   }
@@ -212,7 +204,7 @@ export default function FactorFactoryGame() {
                     <p className="text-slate-500 text-sm">No blueprints yet. Start dragging!</p>
                   ) : (
                     store.foundFactors.map((factor, idx) => (
-                      <motion.div
+                      <div
                         key={idx}
                         initial={{ opacity: 0, x: -10 }}
                         animate={{ opacity: 1, x: 0 }}
@@ -225,7 +217,7 @@ export default function FactorFactoryGame() {
                           </span>
                           <span className="text-slate-500">(= {factor.area})</span>
                         </div>
-                      </motion.div>
+                      </div>
                     ))
                   )}
                 </div>
@@ -233,7 +225,7 @@ export default function FactorFactoryGame() {
 
               {/* Action Buttons */}
               <div className="space-y-2">
-                <motion.button
+                <button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => {
@@ -247,9 +239,9 @@ export default function FactorFactoryGame() {
                 >
                   <Zap size={18} />
                   Add Blueprint
-                </motion.button>
+                </button>
 
-                <motion.button
+                <button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => {
@@ -259,7 +251,7 @@ export default function FactorFactoryGame() {
                 >
                   <RotateCcw size={18} />
                   Clear Selection
-                </motion.button>
+                </button>
               </div>
 
               {/* Hint */}
@@ -292,12 +284,12 @@ export default function FactorFactoryGame() {
             initial={{
               opacity: 1,
               y: -20,
-              x: Math.random() * window.innerWidth,
+              x: Math.random() * (typeof window !== 'undefined' ? window.innerWidth : 800),
               rotate: 0,
             }}
             animate={{
               opacity: 0,
-              y: window.innerHeight + 100,
+              y: (typeof window !== 'undefined' ? window.innerHeight : 600) + 100,
               rotate: 360,
             }}
             transition={{
@@ -313,8 +305,8 @@ export default function FactorFactoryGame() {
 
         {/* Modal */}
         <motion.div
-          initial={{ opacity: 0, backdropFilter: 'blur(0px)' }}
-          animate={{ opacity: 1, backdropFilter: 'blur(8px)' }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
           className="relative z-10 max-w-md w-full"
         >
           <motion.div
