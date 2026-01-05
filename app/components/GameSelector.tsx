@@ -8,9 +8,11 @@ import AngleArchitectGame from './games/AngleArchitectGame';
 import SymmetryShieldGame from './games/SymmetryShieldGame';
 import FactorFactoryGame from './games/FactorFactoryGame';
 import CargoCaptainGame from './games/CargoCaptainGame';
+import MathMarathonGame from './games/MathMarathon';
+import FractionFusionGame from './games/FractionFusion';
 import { RotateCcw } from 'lucide-react';
 
-type GameType = 'home' | 'rope-cutter' | 'liquid-lab' | 'fraction-bridge' | 'angle-architect' | 'symmetry-shield' | 'factor-factory' | 'cargo-captain';
+type GameType = 'home' | 'rope-cutter' | 'liquid-lab' | 'fraction-bridge' | 'angle-architect' | 'symmetry-shield' | 'factor-factory' | 'cargo-captain' | 'math-marathon' | 'fraction-fusion';
 
 const GameSelector: React.FC = () => {
   const [currentGame, setCurrentGame] = useState<GameType>('home');
@@ -34,6 +36,8 @@ const GameSelector: React.FC = () => {
         {currentGame === 'symmetry-shield' && <SymmetryShieldGame />}
         {currentGame === 'factor-factory' && <FactorFactoryGame />}
         {currentGame === 'cargo-captain' && <CargoCaptainGame />}
+        {currentGame === 'math-marathon' && <MathMarathonGame />}
+        {currentGame === 'fraction-fusion' && <FractionFusionGame />}
       </div>
     );
   }
@@ -333,6 +337,93 @@ const GameSelector: React.FC = () => {
               </button>
             </div>
           </div>
+
+          {/* Math Marathon Game Card */}
+          <div
+            onClick={() => setCurrentGame('math-marathon')}
+            className="bg-white rounded-xl shadow-2xl overflow-hidden hover:shadow-3xl hover:scale-105 transition-all transform cursor-pointer group"
+          >
+            <div className="bg-gradient-to-r from-blue-500 to-indigo-600 p-8 text-white">
+              <div className="text-6xl mb-4">🏃</div>
+              <h2 className="text-2xl font-bold mb-2">Math Marathon</h2>
+              <p className="text-sm opacity-90">Mixed Operations Challenge</p>
+            </div>
+
+            <div className="p-6">
+              <div className="mb-4">
+                <h3 className="font-semibold text-gray-800 mb-2">📚 Concept:</h3>
+                <p className="text-gray-600 text-sm">Multi-Chapter Operations (Ch 2, 3, 5, 6)</p>
+              </div>
+
+              <div className="mb-4">
+                <h3 className="font-semibold text-gray-800 mb-2">🎯 Problem:</h3>
+                <p className="text-gray-600 text-sm">
+                  "Race through math challenges! Master ×, ÷, fractions, and factors across 3 levels."
+                </p>
+              </div>
+
+              <div className="mb-6">
+                <h3 className="font-semibold text-gray-800 mb-2">💡 Task:</h3>
+                <p className="text-gray-600 text-sm">
+                  Answer questions correctly to move your race car forward. Build streaks for bonus points!
+                </p>
+              </div>
+
+              <div className="mb-4 p-3 bg-blue-100 rounded-lg border border-blue-300">
+                <p className="text-xs text-blue-800 font-semibold">
+                  🏆 3 Levels: Easy → Medium → Hard
+                </p>
+              </div>
+
+              <button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition-colors">
+                Start Race →
+              </button>
+            </div>
+          </div>
+
+
+          {/* Fraction Fusion Game Card */}
+          <div
+            onClick={() => setCurrentGame('fraction-fusion')}
+            className="bg-white rounded-xl shadow-2xl overflow-hidden hover:shadow-3xl hover:scale-105 transition-all transform cursor-pointer group"
+          >
+            <div className="bg-gradient-to-r from-cyan-500 to-teal-600 p-8 text-white">
+              <div className="text-6xl mb-4">⚛️</div>
+              <h2 className="text-2xl font-bold mb-2">Fraction Fusion</h2>
+              <p className="text-sm opacity-90">Comprehensive Fractions</p>
+            </div>
+
+            <div className="p-6">
+              <div className="mb-4">
+                <h3 className="font-semibold text-gray-800 mb-2">📚 Concept:</h3>
+                <p className="text-gray-600 text-sm">Complete Fraction Operations (Ch 5 & 6)</p>
+              </div>
+
+              <div className="mb-4">
+                <h3 className="font-semibold text-gray-800 mb-2">🎯 Problem:</h3>
+                <p className="text-gray-600 text-sm">
+                  "Stabilize the fusion reactor! Master all fraction operations through 3 challenging levels."
+                </p>
+              </div>
+
+              <div className="mb-6">
+                <h3 className="font-semibold text-gray-800 mb-2">💡 Task:</h3>
+                <p className="text-gray-600 text-sm">
+                  Solve fraction problems (+, -, ×) with visual representations. Simplify your answers!
+                </p>
+              </div>
+
+              <div className="mb-4 p-3 bg-cyan-100 rounded-lg border border-cyan-300">
+                <p className="text-xs text-cyan-800 font-semibold">
+                  ➕➖✖️ 3 Levels: Like Fractions → Unlike Fractions → Mixed Operations
+                </p>
+              </div>
+
+              <button className="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 rounded-lg transition-colors">
+                Start Fusion →
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* Info Section */}
@@ -357,7 +448,14 @@ const GameSelector: React.FC = () => {
               <span className="text-2xl">🧠</span>
               <div>
                 <p className="font-semibold text-gray-800">Concept-Based</p>
-                <p className="text-sm text-gray-600">Teaches CBSE Class 5 Math concepts through gameplay</p>
+                <p className="text-sm text-gray-600">Teaches CBSE Class 5 Math concepts through gameplay — each game card shows the related topic so teachers and students can pick targeted practice.</p>
+              </div>
+            </li>
+            <li className="flex items-start gap-3">
+              <span className="text-2xl">❓</span>
+              <div>
+                <p className="font-semibold text-gray-800">Question Types</p>
+                <p className="text-sm text-gray-600">Questions are tagged as Quick, Good, Tough, or Hard so you can choose pace and difficulty.</p>
               </div>
             </li>
             <li className="flex items-start gap-3">
