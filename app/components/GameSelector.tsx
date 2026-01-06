@@ -10,17 +10,346 @@ import FactorFactoryGame from './games/FactorFactoryGame';
 import CargoCaptainGame from './games/CargoCaptainGame';
 import MathMarathonGame from './games/MathMarathon';
 import FractionFusionGame from './games/FractionFusion';
+import OperationMasterArena from './games/OperationMasterArena';
+import MeasureMoneyTown from './games/MeasureMoneyTown';
+import NumberAdventureGame from './games/class3/NumberAdventureGame';
+import TimeShapeLogicGame from './games/TimeShapeLogic';
 import { RotateCcw } from 'lucide-react';
 
-type GameType = 'home' | 'rope-cutter' | 'liquid-lab' | 'fraction-bridge' | 'angle-architect' | 'symmetry-shield' | 'factor-factory' | 'cargo-captain' | 'math-marathon' | 'fraction-fusion';
+// Game data structure with class and subject information
+interface GameData {
+  id: GameType;
+  title: string;
+  subtitle: string;
+  emoji: string;
+  gradientFrom: string;
+  gradientTo: string;
+  concept: string;
+  problem?: string;
+  badge?: string;
+  btnText?: string;
+  subjects: SubjectType[];
+  chapter?: string;
+}
+
+type GameType =
+  | 'home'
+  | 'rope-cutter'
+  | 'liquid-lab'
+  | 'fraction-bridge'
+  | 'angle-architect'
+  | 'symmetry-shield'
+  | 'factor-factory'
+  | 'cargo-captain'
+  | 'math-marathon'
+  | 'fraction-fusion'
+  | 'number-adventure'
+  | 'operation-master'
+  | 'measure-money'
+  | 'time-shape-logic';
+
+type SubjectType = 
+  | 'english'
+  | 'math'
+  | 'evs'
+  | 'science';
+
+const subjectOptions: { id: SubjectType; label: string; emoji: string; color: string }[] = [
+  { id: 'english', label: 'English', emoji: '📖', color: 'from-pink-400 to-rose-500' },
+  { id: 'math', label: 'Math', emoji: '🔢', color: 'from-blue-400 to-indigo-500' },
+  { id: 'evs', label: 'EVS', emoji: '🌍', color: 'from-green-400 to-emerald-500' },
+  { id: 'science', label: 'Science', emoji: '🔬', color: 'from-purple-400 to-violet-500' },
+];
+
+// All games data - organized by chapter and subject
+const allGames: GameData[] = [
+  // ==================== NUMBERS & OPERATIONS ====================
+  {
+    id: 'number-adventure',
+    title: 'Number Adventure',
+    subtitle: 'Numbers & Place Value',
+    emoji: '🔢',
+    gradientFrom: 'from-green-400',
+    gradientTo: 'to-emerald-500',
+    concept: 'Addition, Subtraction, Place Value, Ordering',
+    problem: 'One-step, Two-step, Word problems, Ordering',
+    badge: '🎲 Unique questions every time!',
+    btnText: '🚀 Start Adventure',
+    subjects: ['math'],
+    chapter: 'Ch 1, 2, 3',
+  },
+  {
+    id: 'operation-master',
+    title: 'Operation Master',
+    subtitle: 'Addition & Subtraction',
+    emoji: '⚔️',
+    gradientFrom: 'from-red-400',
+    gradientTo: 'to-rose-500',
+    concept: 'Addition, Subtraction, Word Problems, Mental Math',
+    problem: 'Multi-step problems, missing terms, estimation',
+    badge: '🎲 Mixed-topic challenges!',
+    btnText: '⚔️ Enter Arena',
+    subjects: ['math'],
+    chapter: 'Ch 2, 4',
+  },
+  {
+    id: 'factor-factory',
+    title: 'The Factor Factory',
+    subtitle: 'Rectangular Arrays',
+    emoji: '🏭',
+    gradientFrom: 'from-orange-400',
+    gradientTo: 'to-amber-500',
+    concept: 'Factors & Rectangular Arrays',
+    badge: '🎲 10 different composite numbers!',
+    btnText: 'Play Game →',
+    subjects: ['math'],
+    chapter: 'Ch 3',
+  },
+  {
+    id: 'math-marathon',
+    title: 'Math Marathon',
+    subtitle: 'Mixed Operations',
+    emoji: '🏃',
+    gradientFrom: 'from-blue-500',
+    gradientTo: 'to-indigo-600',
+    concept: 'Multi-Chapter Operations (Ch 2, 3, 5, 6)',
+    badge: '🏆 3 Levels: Easy → Medium → Hard',
+    btnText: 'Start Race →',
+    subjects: ['math'],
+    chapter: 'Ch 2, 3, 5, 6',
+  },
+
+  // ==================== FRACTIONS ====================
+  {
+    id: 'fraction-bridge',
+    title: 'The Fraction Bridge',
+    subtitle: 'Ordering Fractions',
+    emoji: '🌉',
+    gradientFrom: 'from-cyan-400',
+    gradientTo: 'to-blue-500',
+    concept: 'Ordering & Comparison of Fractions',
+    problem: 'Arrange fractions in descending order',
+    badge: '🎲 Thousands of unique challenges!',
+    btnText: 'Play Game →',
+    subjects: ['math'],
+    chapter: 'Ch 5',
+  },
+  {
+    id: 'rope-cutter',
+    title: 'The Rope Cutter',
+    subtitle: 'Division of Mixed Fractions',
+    emoji: '🪢',
+    gradientFrom: 'from-yellow-400',
+    gradientTo: 'to-orange-500',
+    concept: 'Division of Mixed Fractions',
+    problem: 'Cut rope into equal pieces (12-20m, 4-6 pieces)',
+    badge: '🎲 Different rope length every play!',
+    btnText: 'Play Game →',
+    subjects: ['math'],
+    chapter: 'Ch 6',
+  },
+  {
+    id: 'liquid-lab',
+    title: 'Liquid Lab',
+    subtitle: 'Fraction Subtraction',
+    emoji: '🧪',
+    gradientFrom: 'from-purple-400',
+    gradientTo: 'to-pink-500',
+    concept: 'Fraction Subtraction with Unlike Denominators',
+    problem: 'Pour target volume from a beaker',
+    badge: '🎲 100+ unique fraction combinations!',
+    btnText: 'Play Game →',
+    subjects: ['math'],
+    chapter: 'Ch 6',
+  },
+  {
+    id: 'fraction-fusion',
+    title: 'Fraction Fusion',
+    subtitle: 'Complete Fractions',
+    emoji: '⚛️',
+    gradientFrom: 'from-cyan-500',
+    gradientTo: 'to-teal-600',
+    concept: 'Complete Fraction Operations (+, -, ×)',
+    badge: '🏆 3 Levels: Like → Unlike → Mixed',
+    btnText: 'Start Fusion →',
+    subjects: ['math'],
+    chapter: 'Ch 5, 6',
+  },
+
+  // ==================== GEOMETRY ====================
+  {
+    id: 'angle-architect',
+    title: 'The Angle Architect',
+    subtitle: 'Angles & Rotation',
+    emoji: '🔧',
+    gradientFrom: 'from-indigo-400',
+    gradientTo: 'to-purple-500',
+    concept: 'Angles as Turns & Classification',
+    btnText: 'Play Game →',
+    subjects: ['math'],
+    chapter: 'Ch 4',
+  },
+  {
+    id: 'symmetry-shield',
+    title: 'The Symmetry Shield',
+    subtitle: 'Reflection & Patterns',
+    emoji: '🛡️',
+    gradientFrom: 'from-teal-400',
+    gradientTo: 'to-cyan-500',
+    concept: 'Reflection Symmetry & Pattern Completion',
+    btnText: 'Play Game →',
+    subjects: ['math'],
+    chapter: 'Ch 4',
+  },
+  {
+    id: 'time-shape-logic',
+    title: 'Time, Shape & Logic World',
+    subtitle: 'Time, Shapes & Data',
+    emoji: '🕐',
+    gradientFrom: 'from-pink-400',
+    gradientTo: 'to-rose-500',
+    concept: 'Time (Clock & Calendar), 2D/3D Shapes, Data Handling (Pictograph)',
+    problem: 'Time calculations, Shape properties, Reading pictographs',
+    badge: '🧠 Reasoning & Observation Skills',
+    btnText: '🌟 Start Game →',
+    subjects: ['math'],
+    chapter: 'Ch 10, 11, 12',
+  },
+
+  // ==================== MEASUREMENTS ====================
+  {
+    id: 'measure-money',
+    title: 'Measure & Money Town',
+    subtitle: 'Measurement & Money',
+    emoji: '💰',
+    gradientFrom: 'from-yellow-400',
+    gradientTo: 'to-amber-500',
+    concept: 'Units, Conversions, Money Calculations',
+    problem: 'Unit conversions, coin change',
+    badge: '🎲 Fun measurement challenges!',
+    btnText: '💰 Shop & Measure',
+    subjects: ['math'],
+    chapter: 'Ch 7, 8',
+  },
+  {
+    id: 'cargo-captain',
+    title: 'The Cargo Captain',
+    subtitle: 'Volume Calculation',
+    emoji: '⛴️',
+    gradientFrom: 'from-cyan-400',
+    gradientTo: 'to-blue-500',
+    concept: 'Volume Packing & 3D Estimation',
+    btnText: 'Play Game →',
+    subjects: ['math'],
+    chapter: 'Ch 9',
+  },
+];
 
 const GameSelector: React.FC = () => {
   const [currentGame, setCurrentGame] = useState<GameType>('home');
+  const [selectedSubject, setSelectedSubject] = useState<SubjectType | 'all'>('all');
+
+  // Filter games based on selected subject
+  const filteredGames = allGames.filter((game) => {
+    return selectedSubject === 'all' || game.subjects.includes(selectedSubject);
+  });
+
+  // Cartoon-style Game Card
+  const CartoonGameCard: React.FC<{
+    game: GameData;
+  }> = ({ game }) => {
+    const primarySubject = subjectOptions.find(s => s.id === game.subjects[0]);
+    const subjectColor = primarySubject?.color || 'from-purple-400 to-violet-500';
+    
+    return (
+      <div
+        onClick={() => setCurrentGame(game.id)}
+        className="bg-white rounded-3xl shadow-2xl overflow-hidden hover:shadow-3xl hover:scale-105 transition-all transform cursor-pointer group"
+      >
+        {/* Cartoon Header with Character */}
+        <div className={`bg-gradient-to-r ${game.gradientFrom} ${game.gradientTo} p-6 text-white relative overflow-hidden`}>
+          <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-10 -mt-10"></div>
+          <div className="absolute bottom-0 left-0 w-20 h-20 bg-white/10 rounded-full -ml-5 -mb-5"></div>
+          <div className="flex items-center gap-4 relative z-10">
+            <div className="w-20 h-20 bg-white/20 rounded-2xl flex items-center justify-center text-5xl shadow-lg backdrop-blur-sm">
+              {game.emoji}
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold mb-1 drop-shadow-lg">{game.title}</h2>
+              <p className="text-white/90 font-medium">{game.subtitle}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Content Section */}
+        <div className="p-6 bg-gradient-to-b from-white to-gray-50">
+          {/* Chapter Badge */}
+          {game.chapter && (
+            <div className="mb-3">
+              <span className="inline-block px-3 py-1 rounded-full text-xs font-bold bg-gray-100 text-gray-700 border border-gray-300">
+                📖 Chapter {game.chapter}
+              </span>
+            </div>
+          )}
+
+          {/* Subject Badge */}
+          <div className="mb-3 flex flex-wrap gap-2">
+            {game.subjects.map((subj) => {
+              const subjInfo = subjectOptions.find(s => s.id === subj);
+              return subjInfo ? (
+                <span key={subj} className={`px-3 py-1 rounded-full text-xs font-bold bg-gradient-to-r ${subjInfo.color} text-white`}>
+                  {subjInfo.emoji} {subjInfo.label}
+                </span>
+              ) : null;
+            })}
+          </div>
+
+          {/* Concept */}
+          <div className="mb-3 flex items-start gap-2">
+            <span className="text-xl mt-0.5">📚</span>
+            <div className="bg-blue-50 border border-blue-200 px-3 py-1.5 rounded-lg flex-1">
+              <p className="text-gray-800 font-medium text-sm">{game.concept}</p>
+            </div>
+          </div>
+
+          {/* Problem */}
+          {game.problem && (
+            <div className="mb-3 flex items-start gap-2">
+              <span className="text-xl mt-0.5">🎯</span>
+              <div className="bg-amber-50 border-2 border-amber-200 px-3 py-1.5 rounded-lg flex-1">
+                <p className="text-gray-700 text-sm font-medium">{game.problem}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Badge */}
+          {game.badge && (
+            <div className="mb-4 flex items-center gap-2">
+              <span className="text-lg">✨</span>
+              <div className="bg-gradient-to-r from-yellow-100 to-orange-100 border-2 border-yellow-300 px-3 py-1.5 rounded-lg flex-1">
+                <p className="text-amber-800 text-xs font-bold">{game.badge}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Play Button */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setCurrentGame(game.id);
+            }}
+            className={`w-full bg-gradient-to-r ${game.gradientFrom} ${game.gradientTo} hover:opacity-90 text-white font-bold py-4 rounded-2xl transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-1`}
+          >
+            {game.btnText || '🎮 Play Now!'}
+          </button>
+        </div>
+      </div>
+    );
+  };
 
   if (currentGame !== 'home') {
     return (
       <div>
-        {/* Back Button */}
         <button
           onClick={() => setCurrentGame('home')}
           className="fixed top-4 left-4 flex items-center gap-2 bg-gray-600 hover:bg-gray-700 text-white font-semibold px-4 py-2 rounded-lg transition-colors z-50"
@@ -38,441 +367,188 @@ const GameSelector: React.FC = () => {
         {currentGame === 'cargo-captain' && <CargoCaptainGame />}
         {currentGame === 'math-marathon' && <MathMarathonGame />}
         {currentGame === 'fraction-fusion' && <FractionFusionGame />}
+        {currentGame === 'operation-master' && (
+          <OperationMasterArena onExit={() => setCurrentGame('home')} />
+        )}
+        {currentGame === 'measure-money' && (
+          <MeasureMoneyTown onExit={() => setCurrentGame('home')} />
+        )}
+        {currentGame === 'number-adventure' && (
+          <NumberAdventureGame onExit={() => setCurrentGame('home')} />
+        )}
+        {currentGame === 'time-shape-logic' && <TimeShapeLogicGame />}
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 p-8">
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 p-4 md:p-8">
+      <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="text-center mb-16">
-          <h1 className="text-5xl font-bold text-white mb-4">🎮 Game Arena</h1>
-          <p className="text-xl text-gray-100">
-            Master CBSE Class 5 Math Concepts Through Interactive Games
+        <div className="text-center mb-8">
+          <h1 className="text-4xl md:text-5xl font-bold text-white mb-3 drop-shadow-lg">🎮 Math Game Arena</h1>
+          <p className="text-lg md:text-xl text-gray-100">
+            Class 3 • Learn CBSE Math Through Fun Games! ✨
           </p>
         </div>
 
-        {/* Game Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {/* Rope Cutter Game Card */}
-          <div
-            onClick={() => setCurrentGame('rope-cutter')}
-            className="bg-white rounded-xl shadow-2xl overflow-hidden hover:shadow-3xl hover:scale-105 transition-all transform cursor-pointer group"
-          >
-            <div className="bg-gradient-to-r from-yellow-400 to-orange-500 p-8 text-white">
-              <div className="text-6xl mb-4">🪢</div>
-              <h2 className="text-2xl font-bold mb-2">The Rope Cutter</h2>
-              <p className="text-sm opacity-90">Learn Mixed Fractions</p>
-            </div>
-
-            <div className="p-6">
-              <div className="mb-4">
-                <h3 className="font-semibold text-gray-800 mb-2">📚 Concept:</h3>
-                <p className="text-gray-600 text-sm">Division of Mixed Fractions</p>
-              </div>
-
-              <div className="mb-4">
-                <h3 className="font-semibold text-gray-800 mb-2">🎯 Problem:</h3>
-                <p className="text-gray-600 text-sm">
-                  "Cut a randomly-sized rope into equal pieces (12-20m, 4-6 pieces)."
-                </p>
-              </div>
-
-              <div className="mb-6">
-                <h3 className="font-semibold text-gray-800 mb-2">💡 Task:</h3>
-                <p className="text-gray-600 text-sm">
-                  Make precise cuts at calculated intervals with ±0.2m tolerance.
-                </p>
-              </div>
-
-              <div className="mb-4 p-3 bg-orange-100 rounded-lg border border-orange-300">
-                <p className="text-xs text-orange-800 font-semibold">
-                  🎲 Procedurally Generated: Different rope length every play!
-                </p>
-              </div>
-
-              <button className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 rounded-lg transition-colors">
-                Play Game →
-              </button>
-            </div>
-          </div>
-
-          {/* Liquid Lab Game Card */}
-          <div
-            onClick={() => setCurrentGame('liquid-lab')}
-            className="bg-white rounded-xl shadow-2xl overflow-hidden hover:shadow-3xl hover:scale-105 transition-all transform cursor-pointer group"
-          >
-            <div className="bg-gradient-to-r from-purple-400 to-pink-500 p-8 text-white">
-              <div className="text-6xl mb-4">🧪</div>
-              <h2 className="text-2xl font-bold mb-2">Liquid Lab</h2>
-              <p className="text-sm opacity-90">Master Fraction Subtraction</p>
-            </div>
-
-            <div className="p-6">
-              <div className="mb-4">
-                <h3 className="font-semibold text-gray-800 mb-2">📚 Concept:</h3>
-                <p className="text-gray-600 text-sm">Fraction Subtraction with Unlike Denominators</p>
-              </div>
-
-              <div className="mb-4">
-                <h3 className="font-semibold text-gray-800 mb-2">🎯 Problem:</h3>
-                <p className="text-gray-600 text-sm">
-                  "Pour a random target volume from a randomly-filled beaker."
-                </p>
-              </div>
-
-              <div className="mb-6">
-                <h3 className="font-semibold text-gray-800 mb-2">💡 Task:</h3>
-                <p className="text-gray-600 text-sm">
-                  Find equivalent fractions and pour precisely to match the target.
-                </p>
-              </div>
-
-              <div className="mb-4 p-3 bg-pink-100 rounded-lg border border-pink-300">
-                <p className="text-xs text-pink-800 font-semibold">
-                  🎲 Procedurally Generated: 100+ unique fraction combinations!
-                </p>
-              </div>
-
-              <button className="w-full bg-pink-500 hover:bg-pink-600 text-white font-bold py-3 rounded-lg transition-colors">
-                Play Game →
-              </button>
-            </div>
-          </div>
-
-          {/* Fraction Bridge Game Card */}
-          <div
-            onClick={() => setCurrentGame('fraction-bridge')}
-            className="bg-white rounded-xl shadow-2xl overflow-hidden hover:shadow-3xl hover:scale-105 transition-all transform cursor-pointer group"
-          >
-            <div className="bg-gradient-to-r from-cyan-400 to-blue-500 p-8 text-white">
-              <div className="text-6xl mb-4">🌉</div>
-              <h2 className="text-2xl font-bold mb-2">The Fraction Bridge</h2>
-              <p className="text-sm opacity-90">Master Fraction Ordering</p>
-            </div>
-
-            <div className="p-6">
-              <div className="mb-4">
-                <h3 className="font-semibold text-gray-800 mb-2">📚 Concept:</h3>
-                <p className="text-gray-600 text-sm">Ordering & Comparison of Fractions</p>
-              </div>
-
-              <div className="mb-4">
-                <h3 className="font-semibold text-gray-800 mb-2">🎯 Problem:</h3>
-                <p className="text-gray-600 text-sm">
-                  "Arrange 5 randomly-generated fractions in descending order."
-                </p>
-              </div>
-
-              <div className="mb-6">
-                <h3 className="font-semibold text-gray-800 mb-2">💡 Task:</h3>
-                <p className="text-gray-600 text-sm">
-                  Drag planks to build the bridge by ordering fractions (largest → smallest).
-                </p>
-              </div>
-
-              <div className="mb-4 p-3 bg-cyan-100 rounded-lg border border-cyan-300">
-                <p className="text-xs text-cyan-800 font-semibold">
-                  🎲 Procedurally Generated: Thousands of unique challenges!
-                </p>
-              </div>
-
-              <button className="w-full bg-cyan-500 hover:bg-cyan-600 text-white font-bold py-3 rounded-lg transition-colors">
-                Play Game →
-              </button>
-            </div>
-          </div>
-
-          {/* Angle Architect Game Card */}
-          <div
-            onClick={() => setCurrentGame('angle-architect')}
-            className="bg-white rounded-xl shadow-2xl overflow-hidden hover:shadow-3xl hover:scale-105 transition-all transform cursor-pointer group"
-          >
-            <div className="bg-gradient-to-r from-indigo-400 to-purple-500 p-8 text-white">
-              <div className="text-6xl mb-4">🌉</div>
-              <h2 className="text-2xl font-bold mb-2">The Angle Architect</h2>
-              <p className="text-sm opacity-90">Master Angles & Rotation</p>
-            </div>
-
-            <div className="p-6">
-              <div className="mb-4">
-                <h3 className="font-semibold text-gray-800 mb-2">📚 Concept:</h3>
-                <p className="text-gray-600 text-sm">Angles as Turns & Classification</p>
-              </div>
-
-              <div className="mb-4">
-                <h3 className="font-semibold text-gray-800 mb-2">🎯 Problem:</h3>
-                <p className="text-gray-600 text-sm">
-                  "Rotate the bridge to connect floating platforms for citizens to cross."
-                </p>
-              </div>
-
-              <div className="mb-6">
-                <h3 className="font-semibold text-gray-800 mb-2">💡 Task:</h3>
-                <p className="text-gray-600 text-sm">
-                  Drag to rotate the bridge to the target angle with ±5° tolerance.
-                </p>
-              </div>
-
-              <button className="w-full bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-3 rounded-lg transition-colors">
-                Play Game →
-              </button>
-            </div>
-          </div>
-
-          {/* Symmetry Shield Game Card */}
-          <div
-            onClick={() => setCurrentGame('symmetry-shield')}
-            className="bg-white rounded-xl shadow-2xl overflow-hidden hover:shadow-3xl hover:scale-105 transition-all transform cursor-pointer group"
-          >
-            <div className="bg-gradient-to-r from-teal-400 to-cyan-500 p-8 text-white">
-              <div className="text-6xl mb-4">🛡️</div>
-              <h2 className="text-2xl font-bold mb-2">The Symmetry Shield</h2>
-              <p className="text-sm opacity-90">Master Reflection & Patterns</p>
-            </div>
-
-            <div className="p-6">
-              <div className="mb-4">
-                <h3 className="font-semibold text-gray-800 mb-2">📚 Concept:</h3>
-                <p className="text-gray-600 text-sm">Reflection Symmetry & Pattern Completion</p>
-              </div>
-
-              <div className="mb-4">
-                <h3 className="font-semibold text-gray-800 mb-2">🎯 Problem:</h3>
-                <p className="text-gray-600 text-sm">
-                  "Mirror the left side pattern on the right side to repair the starship's defense shield."
-                </p>
-              </div>
-
-              <div className="mb-6">
-                <h3 className="font-semibold text-gray-800 mb-2">💡 Task:</h3>
-                <p className="text-gray-600 text-sm">
-                  Click cells on the right to match the left pattern perfectly using reflection symmetry.
-                </p>
-              </div>
-
-              <button className="w-full bg-cyan-500 hover:bg-cyan-600 text-white font-bold py-3 rounded-lg transition-colors">
-                Play Game →
-              </button>
-            </div>
-          </div>
-
-          {/* Factor Factory Game Card */}
-          <div
-            onClick={() => setCurrentGame('factor-factory')}
-            className="bg-white rounded-xl shadow-2xl overflow-hidden hover:shadow-3xl hover:scale-105 transition-all transform cursor-pointer group"
-          >
-            <div className="bg-gradient-to-r from-orange-400 to-amber-500 p-8 text-white">
-              <div className="text-6xl mb-4">🏭</div>
-              <h2 className="text-2xl font-bold mb-2">The Factor Factory</h2>
-              <p className="text-sm opacity-90">Explore Rectangular Arrays</p>
-            </div>
-
-            <div className="p-6">
-              <div className="mb-4">
-                <h3 className="font-semibold text-gray-800 mb-2">📚 Concept:</h3>
-                <p className="text-gray-600 text-sm">Factors & Rectangular Arrays</p>
-              </div>
-
-              <div className="mb-4">
-                <h3 className="font-semibold text-gray-800 mb-2">🎯 Problem:</h3>
-                <p className="text-gray-600 text-sm">
-                  "Find all factor pairs of randomly-selected composite numbers (12, 18, 24, 30...)."
-                </p>
-              </div>
-
-              <div className="mb-6">
-                <h3 className="font-semibold text-gray-800 mb-2">💡 Task:</h3>
-                <p className="text-gray-600 text-sm">
-                  Drag across the grid to create rectangles and discover all factor pairs.
-                </p>
-              </div>
-
-              <div className="mb-4 p-3 bg-amber-100 rounded-lg border border-amber-300">
-                <p className="text-xs text-amber-800 font-semibold">
-                  🎲 Procedurally Generated: 10 different composite numbers!
-                </p>
-              </div>
-
-              <button className="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 rounded-lg transition-colors">
-                Play Game →
-              </button>
-            </div>
-          </div>
-
-          {/* Cargo Captain Game Card */}
-          <div
-            onClick={() => setCurrentGame('cargo-captain')}
-            className="bg-white rounded-xl shadow-2xl overflow-hidden hover:shadow-3xl hover:scale-105 transition-all transform cursor-pointer group"
-          >
-            <div className="bg-gradient-to-r from-cyan-400 to-blue-500 p-8 text-white">
-              <div className="text-6xl mb-4">⛴️</div>
-              <h2 className="text-2xl font-bold mb-2">The Cargo Captain</h2>
-              <p className="text-sm opacity-90">Master Volume Calculation</p>
-            </div>
-
-            <div className="p-6">
-              <div className="mb-4">
-                <h3 className="font-semibold text-gray-800 mb-2">📚 Concept:</h3>
-                <p className="text-gray-600 text-sm">Volume Packing & 3D Estimation</p>
-              </div>
-
-              <div className="mb-4">
-                <h3 className="font-semibold text-gray-800 mb-2">🎯 Problem:</h3>
-                <p className="text-gray-600 text-sm">
-                  "Captain! Estimate the container's volume, then pack crates layer by layer to verify."
-                </p>
-              </div>
-
-              <div className="mb-6">
-                <h3 className="font-semibold text-gray-800 mb-2">💡 Task:</h3>
-                <p className="text-gray-600 text-sm">
-                  Guess the volume, then click cells in each layer to pack crates. Replicate layers to fill the height.
-                </p>
-              </div>
-
-              <button className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 rounded-lg transition-colors">
-                Play Game →
-              </button>
-            </div>
-          </div>
-
-          {/* Math Marathon Game Card */}
-          <div
-            onClick={() => setCurrentGame('math-marathon')}
-            className="bg-white rounded-xl shadow-2xl overflow-hidden hover:shadow-3xl hover:scale-105 transition-all transform cursor-pointer group"
-          >
-            <div className="bg-gradient-to-r from-blue-500 to-indigo-600 p-8 text-white">
-              <div className="text-6xl mb-4">🏃</div>
-              <h2 className="text-2xl font-bold mb-2">Math Marathon</h2>
-              <p className="text-sm opacity-90">Mixed Operations Challenge</p>
-            </div>
-
-            <div className="p-6">
-              <div className="mb-4">
-                <h3 className="font-semibold text-gray-800 mb-2">📚 Concept:</h3>
-                <p className="text-gray-600 text-sm">Multi-Chapter Operations (Ch 2, 3, 5, 6)</p>
-              </div>
-
-              <div className="mb-4">
-                <h3 className="font-semibold text-gray-800 mb-2">🎯 Problem:</h3>
-                <p className="text-gray-600 text-sm">
-                  "Race through math challenges! Master ×, ÷, fractions, and factors across 3 levels."
-                </p>
-              </div>
-
-              <div className="mb-6">
-                <h3 className="font-semibold text-gray-800 mb-2">💡 Task:</h3>
-                <p className="text-gray-600 text-sm">
-                  Answer questions correctly to move your race car forward. Build streaks for bonus points!
-                </p>
-              </div>
-
-              <div className="mb-4 p-3 bg-blue-100 rounded-lg border border-blue-300">
-                <p className="text-xs text-blue-800 font-semibold">
-                  🏆 3 Levels: Easy → Medium → Hard
-                </p>
-              </div>
-
-              <button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition-colors">
-                Start Race →
-              </button>
-            </div>
-          </div>
-
-
-          {/* Fraction Fusion Game Card */}
-          <div
-            onClick={() => setCurrentGame('fraction-fusion')}
-            className="bg-white rounded-xl shadow-2xl overflow-hidden hover:shadow-3xl hover:scale-105 transition-all transform cursor-pointer group"
-          >
-            <div className="bg-gradient-to-r from-cyan-500 to-teal-600 p-8 text-white">
-              <div className="text-6xl mb-4">⚛️</div>
-              <h2 className="text-2xl font-bold mb-2">Fraction Fusion</h2>
-              <p className="text-sm opacity-90">Comprehensive Fractions</p>
-            </div>
-
-            <div className="p-6">
-              <div className="mb-4">
-                <h3 className="font-semibold text-gray-800 mb-2">📚 Concept:</h3>
-                <p className="text-gray-600 text-sm">Complete Fraction Operations (Ch 5 & 6)</p>
-              </div>
-
-              <div className="mb-4">
-                <h3 className="font-semibold text-gray-800 mb-2">🎯 Problem:</h3>
-                <p className="text-gray-600 text-sm">
-                  "Stabilize the fusion reactor! Master all fraction operations through 3 challenging levels."
-                </p>
-              </div>
-
-              <div className="mb-6">
-                <h3 className="font-semibold text-gray-800 mb-2">💡 Task:</h3>
-                <p className="text-gray-600 text-sm">
-                  Solve fraction problems (+, -, ×) with visual representations. Simplify your answers!
-                </p>
-              </div>
-
-              <div className="mb-4 p-3 bg-cyan-100 rounded-lg border border-cyan-300">
-                <p className="text-xs text-cyan-800 font-semibold">
-                  ➕➖✖️ 3 Levels: Like Fractions → Unlike Fractions → Mixed Operations
-                </p>
-              </div>
-
-              <button className="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 rounded-lg transition-colors">
-                Start Fusion →
-              </button>
-            </div>
+        {/* Class Banner */}
+        <div className="flex justify-center mb-6">
+          <div className="bg-white/20 backdrop-blur-sm px-8 py-3 rounded-full">
+            <p className="text-white font-bold text-lg">📚 Class 3 • All Chapters</p>
           </div>
         </div>
 
-        {/* Info Section */}
-        <div className="mt-16 bg-white rounded-lg shadow-lg p-8">
-          <h2 className="text-2xl font-bold text-gray-800 mb-4">✨ Features</h2>
-          <ul className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <li className="flex items-start gap-3">
-              <span className="text-2xl">🎮</span>
+        {/* Subject Filter */}
+        <div className="flex justify-center mb-8">
+          <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-2 flex flex-wrap justify-center gap-2">
+            <button
+              onClick={() => setSelectedSubject('all')}
+              className={`px-5 py-2 rounded-xl font-medium transition-all ${
+                selectedSubject === 'all' 
+                  ? 'bg-white text-purple-700 shadow-lg' 
+                  : 'text-white hover:bg-white/20'
+              }`}
+            >
+              📚 All Subjects
+            </button>
+            {subjectOptions.map((subject) => (
+              <button
+                key={subject.id}
+                onClick={() => setSelectedSubject(subject.id)}
+                className={`px-5 py-2 rounded-xl font-medium transition-all ${
+                  selectedSubject === subject.id 
+                    ? `bg-gradient-to-r ${subject.color} text-white shadow-lg` 
+                    : 'text-white hover:bg-white/20'
+                }`}
+              >
+                <span className="mr-1">{subject.emoji}</span>
+                {subject.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Games Grid */}
+        {filteredGames.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredGames.map((game) => (
+              <CartoonGameCard key={game.id} game={game} />
+            ))}
+          </div>
+        ) : (
+          <div className="max-w-md mx-auto">
+            <div className="bg-white/95 backdrop-blur-sm rounded-3xl shadow-3xl p-8 text-center">
+              <div className="text-6xl mb-4">🔍</div>
+              <h2 className="text-2xl font-bold text-gray-800 mb-2">No Games Found!</h2>
+              <p className="text-gray-600 mb-4">
+                There are no games for <span className="font-bold text-purple-600">{selectedSubject === 'all' ? 'All Subjects' : subjectOptions.find(s => s.id === selectedSubject)?.label}</span> yet.
+              </p>
+              <button
+                onClick={() => setSelectedSubject('all')}
+                className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-bold py-3 px-8 rounded-full transition-all transform hover:scale-105 shadow-lg"
+              >
+                🔄 Show All Games
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Games Count */}
+        {filteredGames.length > 0 && (
+          <div className="mt-8 text-center">
+            <p className="text-white/80 font-medium">
+              Showing <span className="font-bold text-white">{filteredGames.length}</span> games
+              {selectedSubject !== 'all' && (
+                <> for <span className="font-bold">{subjectOptions.find(s => s.id === selectedSubject)?.label}</span></>
+              )}
+            </p>
+          </div>
+        )}
+
+        {/* Subject Info */}
+        <div className="mt-12 bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl p-8">
+          <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">📚 Subjects Available</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="text-center p-4 bg-gradient-to-br from-pink-50 to-rose-50 rounded-xl">
+              <span className="text-4xl mb-2 block">📖</span>
+              <p className="font-bold text-gray-800">English</p>
+              <p className="text-sm text-gray-600">0 games</p>
+            </div>
+            <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl">
+              <span className="text-4xl mb-2 block">🔢</span>
+              <p className="font-bold text-gray-800">Math</p>
+              <p className="text-sm text-gray-600">{allGames.filter(g => g.subjects.includes('math')).length} games</p>
+            </div>
+            <div className="text-center p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl">
+              <span className="text-4xl mb-2 block">🌍</span>
+              <p className="font-bold text-gray-800">EVS</p>
+              <p className="text-sm text-gray-600">0 games</p>
+            </div>
+            <div className="text-center p-4 bg-gradient-to-br from-purple-50 to-violet-50 rounded-xl">
+              <span className="text-4xl mb-2 block">🔬</span>
+              <p className="font-bold text-gray-800">Science</p>
+              <p className="text-sm text-gray-600">0 games</p>
+            </div>
+          </div>
+          <p className="text-center text-gray-500 mt-4 text-sm">
+            💡 Filter by subject to see games in different categories.
+          </p>
+        </div>
+
+        {/* Features Section */}
+        <div className="mt-12 bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl p-8">
+          <h2 className="text-3xl font-bold text-gray-800 mb-6 text-center">✨ Amazing Features</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="flex items-start gap-4 p-4 bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl">
+              <span className="text-4xl">🎮</span>
               <div>
-                <p className="font-semibold text-gray-800">Interactive Gameplay</p>
-                <p className="text-sm text-gray-600">Engaging canvas-based experiences with smooth animations</p>
+                <p className="font-bold text-gray-800">Interactive Games</p>
+                <p className="text-sm text-gray-600">Fun canvas-based experiences</p>
               </div>
-            </li>
-            <li className="flex items-start gap-3">
-              <span className="text-2xl">📊</span>
+            </div>
+            <div className="flex items-start gap-4 p-4 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl">
+              <span className="text-4xl">🧠</span>
               <div>
-                <p className="font-semibold text-gray-800">Detailed Telemetry</p>
-                <p className="text-sm text-gray-600">Stealth assessment with precision tracking and performance logs</p>
+                <p className="font-bold text-gray-800">Concept-Based</p>
+                <p className="text-sm text-gray-600">Learn CBSE math concepts</p>
               </div>
-            </li>
-            <li className="flex items-start gap-3">
-              <span className="text-2xl">🧠</span>
+            </div>
+            <div className="flex items-start gap-4 p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl">
+              <span className="text-4xl">⚡</span>
               <div>
-                <p className="font-semibold text-gray-800">Concept-Based</p>
-                <p className="text-sm text-gray-600">Teaches CBSE Class 5 Math concepts through gameplay — each game card shows the related topic so teachers and students can pick targeted practice.</p>
+                <p className="font-bold text-gray-800">Instant Feedback</p>
+                <p className="text-sm text-gray-600">Hints & progress tracking</p>
               </div>
-            </li>
-            <li className="flex items-start gap-3">
-              <span className="text-2xl">❓</span>
+            </div>
+            <div className="flex items-start gap-4 p-4 bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl">
+              <span className="text-4xl">🎲</span>
               <div>
-                <p className="font-semibold text-gray-800">Question Types</p>
-                <p className="text-sm text-gray-600">Questions are tagged as Quick, Good, Tough, or Hard so you can choose pace and difficulty.</p>
+                <p className="font-bold text-gray-800">Procedural Generation</p>
+                <p className="text-sm text-gray-600">Unique questions every time!</p>
               </div>
-            </li>
-            <li className="flex items-start gap-3">
-              <span className="text-2xl">⚡</span>
+            </div>
+            <div className="flex items-start gap-4 p-4 bg-gradient-to-br from-red-50 to-rose-50 rounded-xl">
+              <span className="text-4xl">📊</span>
               <div>
-                <p className="font-semibold text-gray-800">Real-Time Feedback</p>
-                <p className="text-sm text-gray-600">Instant hints and progress tracking as you play</p>
+                <p className="font-bold text-gray-800">Performance Tracking</p>
+                <p className="text-sm text-gray-600">Detailed progress logs</p>
               </div>
-            </li>
-          </ul>
+            </div>
+            <div className="flex items-start gap-4 p-4 bg-gradient-to-br from-teal-50 to-cyan-50 rounded-xl">
+              <span className="text-4xl">🏆</span>
+              <div>
+                <p className="font-bold text-gray-800">Difficulty Levels</p>
+                <p className="text-sm text-gray-600">Quick to Hard challenges</p>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Footer */}
         <div className="mt-12 text-center text-white">
-          <p className="text-sm opacity-75">
-            🚀 Built with Next.js 14, Konva, React Spring, and Zustand
-          </p>
+          <p className="text-lg opacity-75">🚀 Built with Next.js 14, Konva, React Spring, and Zustand</p>
+          <p className="text-sm opacity-50 mt-2">Made with ❤️ for young mathematicians</p>
         </div>
       </div>
     </div>
@@ -480,3 +556,4 @@ const GameSelector: React.FC = () => {
 };
 
 export default GameSelector;
+
