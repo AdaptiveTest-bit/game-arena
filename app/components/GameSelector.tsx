@@ -10,9 +10,14 @@ import FactorFactoryGame from './games/FactorFactoryGame';
 import CargoCaptainGame from './games/CargoCaptainGame';
 import ShapeSafariGame from './games/ShapeSafariGame';
 import NumberJungleGame from './games/NumberJungleGame';
+import BalloonBlastoffGame from './games/BalloonBlastoffGame';
+import BubblePopGame from './games/BubblePopGame';
+import TickTockGame from './games/TickTockGame';
+import MeasureIslandGame from './games/MeasureIslandGame';
+import DataDetectiveGame from './games/DataDetectiveGame';
 import { RotateCcw } from 'lucide-react';
 
-type GameType = 'home' | 'rope-cutter' | 'liquid-lab' | 'fraction-bridge' | 'angle-architect' | 'symmetry-shield' | 'factor-factory' | 'cargo-captain' | 'shape-safari' | 'number-jungle';
+type GameType = 'home' | 'rope-cutter' | 'liquid-lab' | 'fraction-bridge' | 'angle-architect' | 'symmetry-shield' | 'factor-factory' | 'cargo-captain' | 'shape-safari' | 'number-jungle' | 'balloon-blastoff' | 'bubble-pop' | 'tick-tock' | 'measure-island' | 'data-detective';
 
 const GameSelector: React.FC = () => {
   const [currentGame, setCurrentGame] = useState<GameType>('home');
@@ -38,6 +43,11 @@ const GameSelector: React.FC = () => {
         {currentGame === 'cargo-captain' && <CargoCaptainGame />}
         {currentGame === 'shape-safari' && <ShapeSafariGame />}
         {currentGame === 'number-jungle' && <NumberJungleGame />}
+        {currentGame === 'balloon-blastoff' && <BalloonBlastoffGame />}
+        {currentGame === 'bubble-pop' && <BubblePopGame />}
+        {currentGame === 'tick-tock' && <TickTockGame />}
+        {currentGame === 'measure-island' && <MeasureIslandGame />}
+        {currentGame === 'data-detective' && <DataDetectiveGame />}
       </div>
     );
   }
@@ -434,6 +444,236 @@ const GameSelector: React.FC = () => {
                 </div>
 
                 <button className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 rounded-lg transition-colors">
+                  Play Game →
+                </button>
+              </div>
+            </div>
+
+            {/* Balloon Blastoff Game Card */}
+            <div
+              onClick={() => setCurrentGame('balloon-blastoff')}
+              className="bg-white rounded-xl shadow-2xl overflow-hidden hover:shadow-3xl hover:scale-105 transition-all transform cursor-pointer group"
+            >
+              <div className="bg-gradient-to-r from-pink-400 to-red-500 p-8 text-white">
+                <div className="text-6xl mb-4">🎈🐰☁️</div>
+                <h2 className="text-2xl font-bold mb-2">Balloon Blastoff</h2>
+                <p className="text-sm opacity-90">Learn Addition (1-100)!</p>
+              </div>
+
+              <div className="p-6">
+                <div className="mb-4">
+                  <h3 className="font-semibold text-gray-800 mb-2">📚 Concept:</h3>
+                  <p className="text-gray-600 text-sm">Addition within 100 (CBSE Class 1, Chapter 3)</p>
+                </div>
+
+                <div className="mb-4">
+                  <h3 className="font-semibold text-gray-800 mb-2">🎯 Learn About:</h3>
+                  <ul className="text-gray-600 text-sm space-y-1">
+                    <li>➕ Add numbers to reach a target sum</li>
+                    <li>🧮 Mental math strategies</li>
+                    <li>🔄 Multiple ways to make the same sum</li>
+                    <li>🎯 Problem-solving with constraints</li>
+                  </ul>
+                </div>
+
+                <div className="mb-6">
+                  <h3 className="font-semibold text-gray-800 mb-2">💡 How to Play:</h3>
+                  <p className="text-gray-600 text-sm">
+                    Drag numbered balloons to the basket until they add up to the target. Help the bunny fly to the clouds!
+                  </p>
+                </div>
+
+                <div className="mb-4 p-3 bg-pink-100 rounded-lg border border-pink-300">
+                  <p className="text-xs text-pink-800 font-semibold">
+                    🎲 Procedurally Generated: New target sums every level!
+                  </p>
+                </div>
+
+                <button className="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-3 rounded-lg transition-colors">
+                  Play Game →
+                </button>
+              </div>
+            </div>
+
+            {/* Bubble Pop Game Card */}
+            <div
+              onClick={() => setCurrentGame('bubble-pop')}
+              className="bg-white rounded-xl shadow-2xl overflow-hidden hover:shadow-3xl hover:scale-105 transition-all transform cursor-pointer group"
+            >
+              <div className="bg-gradient-to-r from-cyan-400 to-teal-500 p-8 text-white">
+                <div className="text-6xl mb-4">🫧🐕✨</div>
+                <h2 className="text-2xl font-bold mb-2">Bubble Pop Countdown</h2>
+                <p className="text-sm opacity-90">Learn Subtraction (1-100)!</p>
+              </div>
+
+              <div className="p-6">
+                <div className="mb-4">
+                  <h3 className="font-semibold text-gray-800 mb-2">📚 Concept:</h3>
+                  <p className="text-gray-600 text-sm">Subtraction within 100 (CBSE Class 1, Chapter 4)</p>
+                </div>
+
+                <div className="mb-4">
+                  <h3 className="font-semibold text-gray-800 mb-2">🎯 Learn About:</h3>
+                  <ul className="text-gray-600 text-sm space-y-1">
+                    <li>➖ Subtract by "taking away"</li>
+                    <li>🔢 Find the difference between numbers</li>
+                    <li>🧮 Count backwards mentally</li>
+                    <li>🔄 Undo mistakes and try again</li>
+                  </ul>
+                </div>
+
+                <div className="mb-6">
+                  <h3 className="font-semibold text-gray-800 mb-2">💡 How to Play:</h3>
+                  <p className="text-gray-600 text-sm">
+                    Tap bubbles to pop them until only the target number remains. Help Bubbles the puppy!
+                  </p>
+                </div>
+
+                <div className="mb-4 p-3 bg-cyan-100 rounded-lg border border-cyan-300">
+                  <p className="text-xs text-cyan-800 font-semibold">
+                    🎲 Procedurally Generated: New numbers every level!
+                  </p>
+                </div>
+
+                <button className="w-full bg-teal-500 hover:bg-teal-600 text-white font-bold py-3 rounded-lg transition-colors">
+                  Play Game →
+                </button>
+              </div>
+            </div>
+
+            {/* Tick-Tock Town Game Card */}
+            <div
+              onClick={() => setCurrentGame('tick-tock')}
+              className="bg-white rounded-xl shadow-2xl overflow-hidden hover:shadow-3xl hover:scale-105 transition-all transform cursor-pointer group"
+            >
+              <div className="bg-gradient-to-r from-indigo-400 to-purple-500 p-8 text-white">
+                <div className="text-6xl mb-4">🕐🐦⏰</div>
+                <h2 className="text-2xl font-bold mb-2">Tick-Tock Town</h2>
+                <p className="text-sm opacity-90">Learn About Time!</p>
+              </div>
+
+              <div className="p-6">
+                <div className="mb-4">
+                  <h3 className="font-semibold text-gray-800 mb-2">📚 Concept:</h3>
+                  <p className="text-gray-600 text-sm">Time (CBSE Class 1, Chapter 5)</p>
+                </div>
+
+                <div className="mb-4">
+                  <h3 className="font-semibold text-gray-800 mb-2">🎯 Learn About:</h3>
+                  <ul className="text-gray-600 text-sm space-y-1">
+                    <li>🕐 Reading o'clock times</li>
+                    <li>🌅 Morning, Afternoon, Evening, Night</li>
+                    <li>📅 Days of the week</li>
+                    <li>⏱️ Longer & shorter durations</li>
+                  </ul>
+                </div>
+
+                <div className="mb-6">
+                  <h3 className="font-semibold text-gray-800 mb-2">💡 How to Play:</h3>
+                  <p className="text-gray-600 text-sm">
+                    Set clocks, sort daily routines, order events, and learn about time with Cuckoo!
+                  </p>
+                </div>
+
+                <div className="mb-4 p-3 bg-indigo-100 rounded-lg border border-indigo-300">
+                  <p className="text-xs text-indigo-800 font-semibold">
+                    🎲 Procedurally Generated: 7 different activity types!
+                  </p>
+                </div>
+
+                <button className="w-full bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-3 rounded-lg transition-colors">
+                  Play Game →
+                </button>
+              </div>
+            </div>
+
+            {/* Measure Island Game Card */}
+            <div
+              onClick={() => setCurrentGame('measure-island')}
+              className="bg-white rounded-xl shadow-2xl overflow-hidden hover:shadow-3xl hover:scale-105 transition-all transform cursor-pointer group"
+            >
+              <div className="bg-gradient-to-r from-teal-400 to-cyan-500 p-8 text-white">
+                <div className="text-6xl mb-4">🏝️🐒📏</div>
+                <h2 className="text-2xl font-bold mb-2">Measure Island</h2>
+                <p className="text-sm opacity-90">Learn About Measurement!</p>
+              </div>
+
+              <div className="p-6">
+                <div className="mb-4">
+                  <h3 className="font-semibold text-gray-800 mb-2">📚 Concept:</h3>
+                  <p className="text-gray-600 text-sm">Measurement (CBSE Class 1, Chapter 6)</p>
+                </div>
+
+                <div className="mb-4">
+                  <h3 className="font-semibold text-gray-800 mb-2">🎯 Learn About:</h3>
+                  <ul className="text-gray-600 text-sm space-y-1">
+                    <li>📏 Compare lengths & heights</li>
+                    <li>⚖️ Compare weights (heavier/lighter)</li>
+                    <li>🫗 Compare capacities (holds more/less)</li>
+                    <li>🖐️ Measure with handspans & footsteps</li>
+                  </ul>
+                </div>
+
+                <div className="mb-6">
+                  <h3 className="font-semibold text-gray-800 mb-2">💡 How to Play:</h3>
+                  <p className="text-gray-600 text-sm">
+                    Use seesaws to compare, measure objects with non-standard units, and order items by size!
+                  </p>
+                </div>
+
+                <div className="mb-4 p-3 bg-teal-100 rounded-lg border border-teal-300">
+                  <p className="text-xs text-teal-800 font-semibold">
+                    🎲 Procedurally Generated: 8 different activity types!
+                  </p>
+                </div>
+
+                <button className="w-full bg-teal-500 hover:bg-teal-600 text-white font-bold py-3 rounded-lg transition-colors">
+                  Play Game →
+                </button>
+              </div>
+            </div>
+
+            {/* Data Detective Island Game Card */}
+            <div
+              onClick={() => setCurrentGame('data-detective')}
+              className="bg-white rounded-xl shadow-2xl overflow-hidden hover:shadow-3xl hover:scale-105 transition-all transform cursor-pointer group"
+            >
+              <div className="bg-gradient-to-r from-purple-400 to-pink-500 p-8 text-white">
+                <div className="text-6xl mb-4">🐕‍🦺📊🔍</div>
+                <h2 className="text-2xl font-bold mb-2">Data Detective Island</h2>
+                <p className="text-sm opacity-90">Learn About Data Handling!</p>
+              </div>
+
+              <div className="p-6">
+                <div className="mb-4">
+                  <h3 className="font-semibold text-gray-800 mb-2">📚 Concept:</h3>
+                  <p className="text-gray-600 text-sm">Data Handling (CBSE Class 1, Chapter 7)</p>
+                </div>
+
+                <div className="mb-4">
+                  <h3 className="font-semibold text-gray-800 mb-2">🎯 Learn About:</h3>
+                  <ul className="text-gray-600 text-sm space-y-1">
+                    <li>🔢 Counting & collecting data</li>
+                    <li>📊 Tally marks & pictographs</li>
+                    <li>🧺 Sorting by color, type, size</li>
+                    <li>⚖️ Comparing data (more/less)</li>
+                  </ul>
+                </div>
+
+                <div className="mb-6">
+                  <h3 className="font-semibold text-gray-800 mb-2">💡 How to Play:</h3>
+                  <p className="text-gray-600 text-sm">
+                    Count objects, make tally marks, read pictographs, and solve data mysteries with Dotty!
+                  </p>
+                </div>
+
+                <div className="mb-4 p-3 bg-purple-100 rounded-lg border border-purple-300">
+                  <p className="text-xs text-purple-800 font-semibold">
+                    🎲 Procedurally Generated: 8 different activity types!
+                  </p>
+                </div>
+
+                <button className="w-full bg-purple-500 hover:bg-purple-600 text-white font-bold py-3 rounded-lg transition-colors">
                   Play Game →
                 </button>
               </div>
