@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { generateQuestion, Question, Difficulty } from '@/app/utils/class3/numberAdventureGenerator';
+import { generateQuestion, Question, Difficulty } from '@/app/utils/numberAdventureGenerator';
 
 const difficultySequence: Difficulty[] = ['easy', 'easy', 'medium', 'medium', 'hard', 'master'];
 

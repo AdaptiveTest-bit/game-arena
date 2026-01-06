@@ -1,19 +1,24 @@
 'use client';
 
 import React, { useState } from 'react';
-import RopeCutterGame from './games/RopeCutter';
-import LiquidLabGame from './games/LiquidLab';
-import FractionBridgeGame from './games/FractionBridge';
-import AngleArchitectGame from './games/AngleArchitectGame';
-import SymmetryShieldGame from './games/SymmetryShieldGame';
-import FactorFactoryGame from './games/FactorFactoryGame';
-import CargoCaptainGame from './games/CargoCaptainGame';
-import MathMarathonGame from './games/MathMarathon';
-import FractionFusionGame from './games/FractionFusion';
-import OperationMasterArena from './games/OperationMasterArena';
-import MeasureMoneyTown from './games/MeasureMoneyTown';
+import RopeCutterGame from './games/class3/RopeCutter';
+import LiquidLabGame from './games/class3/LiquidLab';
+import FractionBridgeGame from './games/class3/FractionBridge';
+import AngleArchitectGame from './games/class3/AngleArchitectGame';
+import SymmetryShieldGame from './games/class3/SymmetryShieldGame';
+import FactorFactoryGame from './games/class3/FactorFactoryGame';
+import CargoCaptainGame from './games/class3/CargoCaptainGame';
+import MathMarathonGame from './games/class3/MathMarathon';
+import FractionFusionGame from './games/class3/FractionFusion';
+import OperationMasterArena from './games/class3/OperationMasterArena';
+import MeasureMoneyTown from './games/class3/MeasureMoneyTown';
 import NumberAdventureGame from './games/class3/NumberAdventureGame';
-import TimeShapeLogicGame from './games/TimeShapeLogic';
+import TimeShapeLogicGame from './games/class3/TimeShapeLogic';
+import StoryPathAdventure from './games/class3/StoryPathAdventure';
+import VocabularyBuilder from './games/class3/VocabularyBuilder';
+import GrammarLogic from './games/class3/GrammarLogic';
+import ThinkAndTell from './games/class3/ThinkAndTell';
+import MoralMapper from './games/class3/MoralMapper';
 import { RotateCcw } from 'lucide-react';
 
 // Game data structure with class and subject information
@@ -46,7 +51,12 @@ type GameType =
   | 'number-adventure'
   | 'operation-master'
   | 'measure-money'
-  | 'time-shape-logic';
+  | 'time-shape-logic'
+  | 'story-path-adventure'
+  | 'vocabulary-builder'
+  | 'grammar-logic'
+  | 'think-and-tell'
+  | 'moral-mapper';
 
 type SubjectType = 
   | 'english'
@@ -63,6 +73,78 @@ const subjectOptions: { id: SubjectType; label: string; emoji: string; color: st
 
 // All games data - organized by chapter and subject
 const allGames: GameData[] = [
+  // ==================== ENGLISH GAMES ====================
+  {
+    id: 'story-path-adventure',
+    title: 'Story Path Adventure',
+    subtitle: 'Story Sequencing & Morals',
+    emoji: '📖',
+    gradientFrom: 'from-blue-400',
+    gradientTo: 'to-indigo-500',
+    concept: 'Story sequencing, moral understanding, cause & effect, prediction',
+    problem: 'Arrange events, find morals, predict outcomes',
+    badge: '🟢 Easy → 🏆 Master (4 levels)',
+    btnText: '📖 Start Adventure →',
+    subjects: ['english'],
+    chapter: 'Stories',
+  },
+  {
+    id: 'vocabulary-builder',
+    title: 'Vocabulary Builder',
+    subtitle: 'Word Detective',
+    emoji: '🔍',
+    gradientFrom: 'from-green-400',
+    gradientTo: 'to-emerald-500',
+    concept: 'Word meanings, synonyms, antonyms, context usage',
+    problem: 'Match meanings, find opposites, fill in blanks',
+    badge: '🟢 Easy → 🏆 Master (4 levels)',
+    btnText: '🔍 Start Building →',
+    subjects: ['english'],
+    chapter: 'Vocabulary',
+  },
+  {
+    id: 'grammar-logic',
+    title: 'Grammar Logic',
+    subtitle: 'Sentence Builder',
+    emoji: '📝',
+    gradientFrom: 'from-purple-400',
+    gradientTo: 'to-violet-500',
+    concept: 'Parts of speech, sentence structure, punctuation, clauses',
+    problem: 'Identify parts, fix sentences, classify words',
+    badge: '🟢 Easy → 🏆 Master (4 levels)',
+    btnText: '📝 Start Building →',
+    subjects: ['english'],
+    chapter: 'Grammar',
+  },
+  {
+    id: 'think-and-tell',
+    title: 'Think & Tell',
+    subtitle: 'Comprehension & Reasoning',
+    emoji: '💭',
+    gradientFrom: 'from-orange-400',
+    gradientTo: 'to-amber-500',
+    concept: 'Reading comprehension, inference, main idea, critical thinking',
+    problem: 'Answer passage questions, infer meaning, analyze themes',
+    badge: '🟢 Easy → 🏆 Master (4 levels)',
+    btnText: '💭 Start Thinking →',
+    subjects: ['english'],
+    chapter: 'Comprehension',
+  },
+  {
+    id: 'moral-mapper',
+    title: 'Moral Mapper',
+    subtitle: 'Story Logic Game',
+    emoji: '💝',
+    gradientFrom: 'from-pink-400',
+    gradientTo: 'to-rose-500',
+    concept: 'Values, ethics, kindness, honesty, courage, responsibility',
+    problem: 'Choose right actions, identify values, solve dilemmas',
+    badge: '🟢 Easy → 🏆 Master (4 levels)',
+    btnText: '💝 Start Learning →',
+    subjects: ['english'],
+    chapter: 'Values & Life Skills',
+  },
+
   // ==================== NUMBERS & OPERATIONS ====================
   {
     id: 'number-adventure',
@@ -287,7 +369,7 @@ const GameSelector: React.FC = () => {
           {game.chapter && (
             <div className="mb-3">
               <span className="inline-block px-3 py-1 rounded-full text-xs font-bold bg-gray-100 text-gray-700 border border-gray-300">
-                📖 Chapter {game.chapter}
+                📖 {game.chapter}
               </span>
             </div>
           )}
@@ -377,6 +459,21 @@ const GameSelector: React.FC = () => {
           <NumberAdventureGame onExit={() => setCurrentGame('home')} />
         )}
         {currentGame === 'time-shape-logic' && <TimeShapeLogicGame />}
+        {currentGame === 'story-path-adventure' && (
+          <StoryPathAdventure onExit={() => setCurrentGame('home')} />
+        )}
+        {currentGame === 'vocabulary-builder' && (
+          <VocabularyBuilder onExit={() => setCurrentGame('home')} />
+        )}
+        {currentGame === 'grammar-logic' && (
+          <GrammarLogic onExit={() => setCurrentGame('home')} />
+        )}
+        {currentGame === 'think-and-tell' && (
+          <ThinkAndTell onExit={() => setCurrentGame('home')} />
+        )}
+        {currentGame === 'moral-mapper' && (
+          <MoralMapper onExit={() => setCurrentGame('home')} />
+        )}
       </div>
     );
   }
@@ -386,16 +483,16 @@ const GameSelector: React.FC = () => {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl md:text-5xl font-bold text-white mb-3 drop-shadow-lg">🎮 Math Game Arena</h1>
+          <h1 className="text-4xl md:text-5xl font-bold text-white mb-3 drop-shadow-lg">🎮 Game Arena</h1>
           <p className="text-lg md:text-xl text-gray-100">
-            Class 3 • Learn CBSE Math Through Fun Games! ✨
+            Class 3 • Learn Through Fun Games! ✨
           </p>
         </div>
 
         {/* Class Banner */}
         <div className="flex justify-center mb-6">
           <div className="bg-white/20 backdrop-blur-sm px-8 py-3 rounded-full">
-            <p className="text-white font-bold text-lg">📚 Class 3 • All Chapters</p>
+            <p className="text-white font-bold text-lg">📚 Class 3 • All Subjects</p>
           </div>
         </div>
 
@@ -473,7 +570,7 @@ const GameSelector: React.FC = () => {
             <div className="text-center p-4 bg-gradient-to-br from-pink-50 to-rose-50 rounded-xl">
               <span className="text-4xl mb-2 block">📖</span>
               <p className="font-bold text-gray-800">English</p>
-              <p className="text-sm text-gray-600">0 games</p>
+              <p className="text-sm text-gray-600">5 games</p>
             </div>
             <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl">
               <span className="text-4xl mb-2 block">🔢</span>
@@ -483,12 +580,12 @@ const GameSelector: React.FC = () => {
             <div className="text-center p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl">
               <span className="text-4xl mb-2 block">🌍</span>
               <p className="font-bold text-gray-800">EVS</p>
-              <p className="text-sm text-gray-600">0 games</p>
+              <p className="text-sm text-gray-600">Coming Soon</p>
             </div>
             <div className="text-center p-4 bg-gradient-to-br from-purple-50 to-violet-50 rounded-xl">
               <span className="text-4xl mb-2 block">🔬</span>
               <p className="font-bold text-gray-800">Science</p>
-              <p className="text-sm text-gray-600">0 games</p>
+              <p className="text-sm text-gray-600">Coming Soon</p>
             </div>
           </div>
           <p className="text-center text-gray-500 mt-4 text-sm">
@@ -504,14 +601,14 @@ const GameSelector: React.FC = () => {
               <span className="text-4xl">🎮</span>
               <div>
                 <p className="font-bold text-gray-800">Interactive Games</p>
-                <p className="text-sm text-gray-600">Fun canvas-based experiences</p>
+                <p className="text-sm text-gray-600">Fun learning experiences</p>
               </div>
             </div>
             <div className="flex items-start gap-4 p-4 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl">
               <span className="text-4xl">🧠</span>
               <div>
                 <p className="font-bold text-gray-800">Concept-Based</p>
-                <p className="text-sm text-gray-600">Learn CBSE math concepts</p>
+                <p className="text-sm text-gray-600">Learn curriculum concepts</p>
               </div>
             </div>
             <div className="flex items-start gap-4 p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl">
@@ -539,7 +636,7 @@ const GameSelector: React.FC = () => {
               <span className="text-4xl">🏆</span>
               <div>
                 <p className="font-bold text-gray-800">Difficulty Levels</p>
-                <p className="text-sm text-gray-600">Quick to Hard challenges</p>
+                <p className="text-sm text-gray-600">Easy to Master challenges</p>
               </div>
             </div>
           </div>
@@ -547,8 +644,8 @@ const GameSelector: React.FC = () => {
 
         {/* Footer */}
         <div className="mt-12 text-center text-white">
-          <p className="text-lg opacity-75">🚀 Built with Next.js 14, Konva, React Spring, and Zustand</p>
-          <p className="text-sm opacity-50 mt-2">Made with ❤️ for young mathematicians</p>
+          <p className="text-lg opacity-75">🚀 Built for Class 3 Learning</p>
+          <p className="text-sm opacity-50 mt-2">Made with ❤️ for young learners</p>
         </div>
       </div>
     </div>
