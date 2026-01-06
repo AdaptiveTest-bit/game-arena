@@ -15,12 +15,25 @@ import BubblePopGame from './games/BubblePopGame';
 import TickTockGame from './games/TickTockGame';
 import MeasureIslandGame from './games/MeasureIslandGame';
 import DataDetectiveGame from './games/DataDetectiveGame';
+import PatternParadeGame from './games/PatternParadeGame';
+import CoinKingdomGame from './games/CoinKingdomGame';
 import { RotateCcw } from 'lucide-react';
 
-type GameType = 'home' | 'rope-cutter' | 'liquid-lab' | 'fraction-bridge' | 'angle-architect' | 'symmetry-shield' | 'factor-factory' | 'cargo-captain' | 'shape-safari' | 'number-jungle' | 'balloon-blastoff' | 'bubble-pop' | 'tick-tock' | 'measure-island' | 'data-detective';
+type GameType = 'home' | 'rope-cutter' | 'liquid-lab' | 'fraction-bridge' | 'angle-architect' | 'symmetry-shield' | 'factor-factory' | 'cargo-captain' | 'shape-safari' | 'number-jungle' | 'balloon-blastoff' | 'bubble-pop' | 'tick-tock' | 'measure-island' | 'data-detective' | 'pattern-parade' | 'coin-kingdom';
+
+type SubjectType = 'mathematics' | 'english' | 'evs' | 'hindi' | 'gk';
+
+const SUBJECTS = [
+  { id: 'mathematics' as SubjectType, name: 'Mathematics', emoji: '🔢', color: 'from-blue-500 to-purple-600' },
+  { id: 'english' as SubjectType, name: 'English', emoji: '📖', color: 'from-green-500 to-teal-600' },
+  { id: 'evs' as SubjectType, name: 'EVS', emoji: '🌍', color: 'from-emerald-500 to-green-600' },
+  { id: 'hindi' as SubjectType, name: 'Hindi', emoji: '🕉️', color: 'from-orange-500 to-red-600' },
+  { id: 'gk' as SubjectType, name: 'GK', emoji: '🧠', color: 'from-purple-500 to-pink-600' },
+];
 
 const GameSelector: React.FC = () => {
   const [currentGame, setCurrentGame] = useState<GameType>('home');
+  const [selectedSubject, setSelectedSubject] = useState<SubjectType>('mathematics');
 
   if (currentGame !== 'home') {
     return (
@@ -48,6 +61,8 @@ const GameSelector: React.FC = () => {
         {currentGame === 'tick-tock' && <TickTockGame />}
         {currentGame === 'measure-island' && <MeasureIslandGame />}
         {currentGame === 'data-detective' && <DataDetectiveGame />}
+        {currentGame === 'pattern-parade' && <PatternParadeGame />}
+        {currentGame === 'coin-kingdom' && <CoinKingdomGame />}
       </div>
     );
   }
@@ -352,11 +367,30 @@ const GameSelector: React.FC = () => {
         {/* Class 1 Section */}
         <div className="mt-16">
           <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold text-white mb-2">🌟 Class 1 Games</h2>
+            <h2 className="text-4xl font-bold text-white mb-2">🌟 Class 1</h2>
             <p className="text-lg text-gray-200">Fun games for our youngest learners!</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {/* Subject Tabs */}
+          <div className="flex flex-wrap justify-center gap-3 mb-8">
+            {SUBJECTS.map((subject) => (
+              <button
+                key={subject.id}
+                onClick={() => setSelectedSubject(subject.id)}
+                className={`px-6 py-3 rounded-full font-bold text-lg transition-all transform hover:scale-105 ${
+                  selectedSubject === subject.id
+                    ? `bg-gradient-to-r ${subject.color} text-white shadow-lg scale-105`
+                    : 'bg-white/20 text-white hover:bg-white/30'
+                }`}
+              >
+                {subject.emoji} {subject.name}
+              </button>
+            ))}
+          </div>
+
+          {/* Mathematics Games */}
+          {selectedSubject === 'mathematics' && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {/* Shape Safari Game Card */}
             <div
               onClick={() => setCurrentGame('shape-safari')}
@@ -678,7 +712,168 @@ const GameSelector: React.FC = () => {
                 </button>
               </div>
             </div>
+
+            {/* Pattern Parade Game Card */}
+            <div
+              onClick={() => setCurrentGame('pattern-parade')}
+              className="bg-white rounded-xl shadow-2xl overflow-hidden hover:shadow-3xl hover:scale-105 transition-all transform cursor-pointer group"
+            >
+              <div className="bg-gradient-to-r from-purple-500 via-pink-500 to-orange-400 p-8 text-white">
+                <div className="text-6xl mb-4">🚂🔴🔵🔴🔵</div>
+                <h2 className="text-2xl font-bold mb-2">Pattern Parade</h2>
+                <p className="text-sm opacity-90">Master Pattern Recognition!</p>
+              </div>
+
+              <div className="p-6">
+                <div className="mb-4">
+                  <h3 className="font-semibold text-gray-800 mb-2">📚 Concept:</h3>
+                  <p className="text-gray-600 text-sm">Patterns (CBSE Class 1, Chapter 7)</p>
+                </div>
+
+                <div className="mb-4">
+                  <h3 className="font-semibold text-gray-800 mb-2">🎯 Learn About:</h3>
+                  <ul className="text-gray-600 text-sm space-y-1">
+                    <li>🔍 Identifying repeating patterns (AB, ABC, AAB)</li>
+                    <li>🔮 Extending patterns - What comes next?</li>
+                    <li>🧩 Finding missing elements in patterns</li>
+                    <li>🌱 Growing patterns & 🪞 Mirror symmetry</li>
+                  </ul>
+                </div>
+
+                <div className="mb-6">
+                  <h3 className="font-semibold text-gray-800 mb-2">💡 How to Play:</h3>
+                  <p className="text-gray-600 text-sm">
+                    Help the magical train by solving 6 types of pattern puzzles! Drag items, spot rules, and build your own patterns.
+                  </p>
+                </div>
+
+                <div className="mb-4 p-3 bg-pink-100 rounded-lg border border-pink-300">
+                  <p className="text-xs text-pink-800 font-semibold">
+                    🎲 6 Game Modes with Dynamic Pattern Generation!
+                  </p>
+                </div>
+
+                <button className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-bold py-3 rounded-lg transition-colors">
+                  Play Game →
+                </button>
+              </div>
+            </div>
+
+            {/* Coin Kingdom Game Card */}
+            <div
+              onClick={() => setCurrentGame('coin-kingdom')}
+              className="bg-white rounded-xl shadow-2xl overflow-hidden hover:shadow-3xl hover:scale-105 transition-all transform cursor-pointer group"
+            >
+              <div className="bg-gradient-to-r from-amber-400 via-yellow-500 to-orange-500 p-8 text-white">
+                <div className="text-6xl mb-4">🪙💰🐷🛒</div>
+                <h2 className="text-2xl font-bold mb-2">Coin Kingdom</h2>
+                <p className="text-sm opacity-90">Master Indian Currency!</p>
+              </div>
+
+              <div className="p-6">
+                <div className="mb-4">
+                  <h3 className="font-semibold text-gray-800 mb-2">📚 Concept:</h3>
+                  <p className="text-gray-600 text-sm">Money (CBSE Class 1, Chapter 7)</p>
+                </div>
+
+                <div className="mb-4">
+                  <h3 className="font-semibold text-gray-800 mb-2">🎯 Learn About:</h3>
+                  <ul className="text-gray-600 text-sm space-y-1">
+                    <li>🔍 Identifying Indian coins and notes</li>
+                    <li>🧮 Counting money and finding totals</li>
+                    <li>🎯 Making exact amounts with coins</li>
+                    <li>🛒 Shopping and paying with money</li>
+                  </ul>
+                </div>
+
+                <div className="mb-6">
+                  <h3 className="font-semibold text-gray-800 mb-2">💡 How to Play:</h3>
+                  <p className="text-gray-600 text-sm">
+                    Collect coins, sort piggy banks, count money, and shop in 6 fun game modes!
+                  </p>
+                </div>
+
+                <div className="mb-4 p-3 bg-amber-100 rounded-lg border border-amber-300">
+                  <p className="text-xs text-amber-800 font-semibold">
+                    🪙 6 Game Modes: Coins ₹1-₹10 & Notes ₹10-₹50
+                  </p>
+                </div>
+
+                <button className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold py-3 rounded-lg transition-colors">
+                  Play Game →
+                </button>
+              </div>
+            </div>
           </div>
+          )}
+
+          {/* English Section - Coming Soon */}
+          {selectedSubject === 'english' && (
+            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-12 text-center">
+              <div className="text-8xl mb-6">📖</div>
+              <h3 className="text-3xl font-bold text-white mb-4">English Games Coming Soon!</h3>
+              <p className="text-xl text-gray-200 mb-6">
+                Fun games for learning alphabets, words, and sentences are being developed.
+              </p>
+              <div className="flex flex-wrap justify-center gap-4">
+                <span className="bg-white/20 text-white px-4 py-2 rounded-full">🔤 Alphabet Fun</span>
+                <span className="bg-white/20 text-white px-4 py-2 rounded-full">📝 Word Builder</span>
+                <span className="bg-white/20 text-white px-4 py-2 rounded-full">📚 Story Time</span>
+                <span className="bg-white/20 text-white px-4 py-2 rounded-full">🎵 Rhymes & Poems</span>
+              </div>
+            </div>
+          )}
+
+          {/* EVS Section - Coming Soon */}
+          {selectedSubject === 'evs' && (
+            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-12 text-center">
+              <div className="text-8xl mb-6">🌍</div>
+              <h3 className="text-3xl font-bold text-white mb-4">EVS Games Coming Soon!</h3>
+              <p className="text-xl text-gray-200 mb-6">
+                Explore the world around you with fun environmental science games.
+              </p>
+              <div className="flex flex-wrap justify-center gap-4">
+                <span className="bg-white/20 text-white px-4 py-2 rounded-full">🌱 Plants & Animals</span>
+                <span className="bg-white/20 text-white px-4 py-2 rounded-full">👨‍👩‍👧 My Family</span>
+                <span className="bg-white/20 text-white px-4 py-2 rounded-full">🏠 My Home</span>
+                <span className="bg-white/20 text-white px-4 py-2 rounded-full">🌤️ Weather</span>
+              </div>
+            </div>
+          )}
+
+          {/* Hindi Section - Coming Soon */}
+          {selectedSubject === 'hindi' && (
+            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-12 text-center">
+              <div className="text-8xl mb-6">🕉️</div>
+              <h3 className="text-3xl font-bold text-white mb-4">हिंदी खेल जल्द आ रहे हैं!</h3>
+              <p className="text-xl text-gray-200 mb-6">
+                Learn Hindi alphabets, words, and sentences through fun games.
+              </p>
+              <div className="flex flex-wrap justify-center gap-4">
+                <span className="bg-white/20 text-white px-4 py-2 rounded-full">🔤 वर्णमाला</span>
+                <span className="bg-white/20 text-white px-4 py-2 rounded-full">📝 शब्द निर्माण</span>
+                <span className="bg-white/20 text-white px-4 py-2 rounded-full">📖 कहानियाँ</span>
+                <span className="bg-white/20 text-white px-4 py-2 rounded-full">🎵 कविताएँ</span>
+              </div>
+            </div>
+          )}
+
+          {/* GK Section - Coming Soon */}
+          {selectedSubject === 'gk' && (
+            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-12 text-center">
+              <div className="text-8xl mb-6">🧠</div>
+              <h3 className="text-3xl font-bold text-white mb-4">GK Games Coming Soon!</h3>
+              <p className="text-xl text-gray-200 mb-6">
+                Learn about the world with general knowledge games.
+              </p>
+              <div className="flex flex-wrap justify-center gap-4">
+                <span className="bg-white/20 text-white px-4 py-2 rounded-full">🇮🇳 India</span>
+                <span className="bg-white/20 text-white px-4 py-2 rounded-full">🎨 Colors</span>
+                <span className="bg-white/20 text-white px-4 py-2 rounded-full">🦁 Animals</span>
+                <span className="bg-white/20 text-white px-4 py-2 rounded-full">🍎 Fruits & Vegetables</span>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Info Section */}
