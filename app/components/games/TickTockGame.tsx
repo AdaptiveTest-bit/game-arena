@@ -1,22 +1,153 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { RotateCcw, Check, SkipForward, Volume2, Home } from 'lucide-react';
+import { RotateCcw, Plus, Minus, Home } from 'lucide-react';
 import dynamic from 'next/dynamic';
-import { useTickTockStore } from '../../store/useTickTockStore';
 
 // Dynamically import canvas to avoid SSR issues
 const TickTockCanvas = dynamic(() => import('./TickTockCanvas'), { ssr: false });
 
 // ============================================
+// TYPE DEFINITIONS
+// ============================================
+
+type QuestionType = 
+  | 'set_clock' 
+  | 'time_of_day' 
+  | 'what_comes_first' 
+  | 'duration_comparison' 
+  | 'days_of_week';
+
+type GamePhase = 'welcome' | 'playing' | 'celebrating';
+
+interface Activity {
+  emoji: string;
+  text: string;
+}
+
+interface Question {
+  type: QuestionType;
+  prompt: string;
+  // For set_clock
+  targetHour?: number;
+  // For time_of_day
+  activity?: Activity;
+  correctTimeOfDay?: string;
+  // For what_comes_first
+  activityA?: Activity;
+  activityB?: Activity;
+  correctAnswer?: 'A' | 'B';
+  askForFirst?: boolean;
+  // For duration_comparison
+  askForLonger?: boolean;
+  // For days_of_week
+  referenceDay?: string;
+  askForAfter?: boolean;
+  dayOptions?: string[];
+  correctDay?: string;
+}
+
+interface GameState {
+  gamePhase: GamePhase;
+  currentRound: number;
+  totalRounds: number;
+  score: number;
+  correctAnswers: number;
+  currentQuestion: Question | null;
+  questionPoints: number;
+  wrongAttempts: number;
+  showWrongFeedback: boolean;
+  showCorrectFeedback: boolean;
+  clockHour: number;
+}
+
+// ============================================
+// DATA CONSTANTS
+// ============================================
+
+const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+const TIME_OF_DAY_ACTIVITIES: Record<string, Activity[]> = {
+  morning: [
+    { emoji: '🛏️', text: 'Wake up from bed' },
+    { emoji: '🪥', text: 'Brush your teeth' },
+    { emoji: '🚌', text: 'Go to school' },
+    { emoji: '🍳', text: 'Eat breakfast' },
+    { emoji: '☀️', text: 'Sun rises' },
+  ],
+  afternoon: [
+    { emoji: '🍱', text: 'Eat lunch' },
+    { emoji: '📖', text: 'Study in class' },
+    { emoji: '☀️', text: 'Sun is high up' },
+    { emoji: '🏫', text: 'School time' },
+  ],
+  evening: [
+    { emoji: '🏠', text: 'Come home from school' },
+    { emoji: '🎮', text: 'Play with friends' },
+    { emoji: '🌆', text: 'Sun sets' },
+    { emoji: '📺', text: 'Watch TV' },
+  ],
+  night: [
+    { emoji: '🍽️', text: 'Eat dinner' },
+    { emoji: '🌙', text: 'Moon comes out' },
+    { emoji: '📖', text: 'Read a bedtime story' },
+    { emoji: '😴', text: 'Go to sleep' },
+    { emoji: '⭐', text: 'Stars twinkle' },
+  ],
+};
+
+const ORDERED_DAILY_ACTIVITIES: Activity[] = [
+  { emoji: '⏰', text: 'Wake up' },
+  { emoji: '🪥', text: 'Brush teeth' },
+  { emoji: '🍳', text: 'Eat breakfast' },
+  { emoji: '🚌', text: 'Go to school' },
+  { emoji: '📚', text: 'Morning classes' },
+  { emoji: '🍱', text: 'Eat lunch' },
+  { emoji: '📖', text: 'Afternoon classes' },
+  { emoji: '🏠', text: 'Come home' },
+  { emoji: '🎮', text: 'Play time' },
+  { emoji: '🍽️', text: 'Eat dinner' },
+  { emoji: '📺', text: 'Watch TV' },
+  { emoji: '🌙', text: 'Go to sleep' },
+];
+
+const DURATION_PAIRS: { longer: Activity; shorter: Activity }[] = [
+  { longer: { emoji: '🍳', text: 'Cooking dinner' }, shorter: { emoji: '🥛', text: 'Drinking milk' } },
+  { longer: { emoji: '🎬', text: 'Watching a movie' }, shorter: { emoji: '📺', text: 'Watching an ad' } },
+  { longer: { emoji: '🏫', text: 'A school day' }, shorter: { emoji: '⏰', text: 'One class' } },
+  { longer: { emoji: '📖', text: 'Reading a book' }, shorter: { emoji: '📝', text: 'Writing your name' } },
+  { longer: { emoji: '🛁', text: 'Taking a bath' }, shorter: { emoji: '🧼', text: 'Washing hands' } },
+  { longer: { emoji: '😴', text: 'Sleeping at night' }, shorter: { emoji: '💤', text: 'A short nap' } },
+  { longer: { emoji: '🎂', text: 'A birthday party' }, shorter: { emoji: '🍪', text: 'Eating a cookie' } },
+  { longer: { emoji: '🏃', text: 'Running a race' }, shorter: { emoji: '👏', text: 'Clapping once' } },
+];
+
+// ============================================
+// HELPER FUNCTIONS
+// ============================================
+
+const shuffle = <T,>(array: T[]): T[] => {
+  const newArray = [...array];
+  for (let i = newArray.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+  }
+  return newArray;
+};
+
+const randomChoice = <T,>(array: T[]): T => {
+  return array[Math.floor(Math.random() * array.length)];
+};
+
+// ============================================
 // MASCOT COMPONENT
 // ============================================
-const CuckooMascot: React.FC<{ state: 'idle' | 'happy' | 'thinking' | 'celebrating' }> = ({ state }) => {
+const CuckooMascot: React.FC<{ state: 'idle' | 'happy' | 'sad' | 'celebrating' }> = ({ state }) => {
   const stateEmojis = {
     idle: '🐦',
     happy: '🎉',
-    thinking: '🤔',
+    sad: '😢',
     celebrating: '🏆',
   };
   
@@ -26,12 +157,14 @@ const CuckooMascot: React.FC<{ state: 'idle' | 'happy' | 'thinking' | 'celebrati
       animate={state === 'celebrating' ? {
         scale: [1, 1.2, 1],
         rotate: [0, -10, 10, 0],
+      } : state === 'sad' ? {
+        x: [-5, 5, -5, 5, 0],
       } : {
         y: [0, -5, 0],
       }}
       transition={{
-        duration: state === 'celebrating' ? 0.5 : 2,
-        repeat: Infinity,
+        duration: state === 'celebrating' ? 0.5 : state === 'sad' ? 0.4 : 2,
+        repeat: state === 'idle' ? Infinity : 0,
         ease: "easeInOut",
       }}
     >
@@ -41,101 +174,236 @@ const CuckooMascot: React.FC<{ state: 'idle' | 'happy' | 'thinking' | 'celebrati
 };
 
 // ============================================
-// TIME OF DAY BUTTON
+// BIG TAPPABLE BUTTON
 // ============================================
-const TimeOfDayButton: React.FC<{
-  timeOfDay: string;
+const BigTapButton: React.FC<{
   emoji: string;
-  isSelected: boolean;
+  label: string;
+  color: string;
   onClick: () => void;
-}> = ({ timeOfDay, emoji, isSelected, onClick }) => (
+  disabled?: boolean;
+  shake?: boolean;
+}> = ({ emoji, label, color, onClick, disabled = false, shake = false }) => (
   <motion.button
-    whileHover={{ scale: 1.05 }}
-    whileTap={{ scale: 0.95 }}
+    whileHover={!disabled ? { scale: 1.05 } : {}}
+    whileTap={!disabled ? { scale: 0.95 } : {}}
+    animate={shake ? { x: [-8, 8, -8, 8, 0] } : {}}
+    transition={shake ? { duration: 0.4 } : {}}
     onClick={onClick}
-    className={`flex flex-col items-center p-4 rounded-xl border-3 transition-all ${
-      isSelected 
-        ? 'bg-indigo-500 text-white border-indigo-600 shadow-lg' 
-        : 'bg-white text-gray-700 border-gray-200 hover:border-indigo-300'
+    disabled={disabled}
+    className={`flex flex-col items-center justify-center p-6 rounded-2xl border-4 transition-all shadow-lg min-h-[120px] ${color} ${
+      disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:shadow-xl active:shadow-md'
     }`}
   >
-    <span className="text-3xl mb-1">{emoji}</span>
-    <span className="text-sm font-semibold capitalize">{timeOfDay}</span>
+    <span className="text-5xl mb-2">{emoji}</span>
+    <span className="text-lg font-bold text-center">{label}</span>
   </motion.button>
 );
 
 // ============================================
-// DRAGGABLE ACTIVITY CARD
+// ACTIVITY CARD (for comparison questions)
 // ============================================
-const ActivityCard: React.FC<{
-  activity: { emoji: string; text: string };
-  onClick?: () => void;
-  isSmall?: boolean;
-  isDimmed?: boolean;
-}> = ({ activity, onClick, isSmall = false, isDimmed = false }) => (
-  <motion.div
-    whileHover={{ scale: 1.05 }}
-    whileTap={{ scale: 0.95 }}
+const ActivityTapCard: React.FC<{
+  activity: Activity;
+  label: string;
+  onClick: () => void;
+  disabled?: boolean;
+  shake?: boolean;
+}> = ({ activity, label, onClick, disabled = false, shake = false }) => (
+  <motion.button
+    whileHover={!disabled ? { scale: 1.05 } : {}}
+    whileTap={!disabled ? { scale: 0.95 } : {}}
+    animate={shake ? { x: [-8, 8, -8, 8, 0] } : {}}
+    transition={shake ? { duration: 0.4 } : {}}
     onClick={onClick}
-    className={`bg-white rounded-xl shadow-md border-2 border-gray-200 cursor-pointer transition-all
-      ${isSmall ? 'p-2' : 'p-4'}
-      ${isDimmed ? 'opacity-50' : 'opacity-100'}
-      hover:border-indigo-400 hover:shadow-lg`}
+    disabled={disabled}
+    className={`flex flex-col items-center justify-center p-5 rounded-2xl border-4 bg-white border-gray-200 hover:border-indigo-400 shadow-lg transition-all min-h-[140px] ${
+      disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:shadow-xl active:shadow-md'
+    }`}
   >
-    <div className={`text-center ${isSmall ? 'text-2xl' : 'text-4xl'} mb-1`}>{activity.emoji}</div>
-    <div className={`text-center text-gray-700 font-medium ${isSmall ? 'text-xs' : 'text-sm'}`}>
-      {activity.text}
-    </div>
-  </motion.div>
+    <span className="text-6xl mb-2">{activity.emoji}</span>
+    <span className="text-base font-semibold text-gray-700 text-center">{activity.text}</span>
+    <span className="text-sm font-bold text-indigo-500 mt-2">{label}</span>
+  </motion.button>
 );
 
 // ============================================
-// SLOT FOR SEQUENCING
+// DAY BUTTON
 // ============================================
-const SequenceSlot: React.FC<{
-  index: number;
-  label: string;
-  item: { emoji: string; text: string } | null;
-  onRemove: () => void;
+const DayButton: React.FC<{
+  day: string;
   onClick: () => void;
-  isSelected: boolean;
-}> = ({ index, label, item, onRemove, onClick, isSelected }) => (
-  <motion.div
-    whileHover={{ scale: 1.02 }}
+  disabled?: boolean;
+  shake?: boolean;
+}> = ({ day, onClick, disabled = false, shake = false }) => (
+  <motion.button
+    whileHover={!disabled ? { scale: 1.05 } : {}}
+    whileTap={!disabled ? { scale: 0.95 } : {}}
+    animate={shake ? { x: [-8, 8, -8, 8, 0] } : {}}
+    transition={shake ? { duration: 0.4 } : {}}
     onClick={onClick}
-    className={`flex flex-col items-center p-2 rounded-xl border-3 min-w-[80px] cursor-pointer transition-all
-      ${isSelected ? 'border-indigo-500 bg-indigo-50' : 'border-dashed border-gray-300 bg-gray-50'}
-      ${item ? 'border-solid border-green-400 bg-green-50' : ''}`}
+    disabled={disabled}
+    className={`flex items-center justify-center gap-2 p-4 rounded-xl border-3 bg-white border-gray-200 hover:border-cyan-400 shadow-md transition-all ${
+      disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:shadow-lg'
+    }`}
   >
-    <span className="text-xs font-bold text-gray-500 mb-1">{label}</span>
-    {item ? (
-      <div className="text-center">
-        <div className="text-2xl">{item.emoji}</div>
-        <div className="text-xs text-gray-600 max-w-[70px] truncate">{item.text}</div>
-        <button 
-          onClick={(e) => { e.stopPropagation(); onRemove(); }}
-          className="text-red-400 text-xs mt-1 hover:text-red-600"
-        >
-          ✕ Remove
-        </button>
-      </div>
-    ) : (
-      <div className="text-2xl text-gray-300">?</div>
-    )}
-  </motion.div>
+    <span className="text-2xl">📅</span>
+    <span className="text-lg font-bold text-gray-700">{day}</span>
+  </motion.button>
 );
+
+// ============================================
+// QUESTION GENERATORS
+// ============================================
+
+const generateSetClockQuestion = (): Question => {
+  const targetHour = Math.floor(Math.random() * 12) + 1;
+  return {
+    type: 'set_clock',
+    targetHour,
+    prompt: `Set the clock to ${targetHour} o'clock!`,
+  };
+};
+
+const generateTimeOfDayQuestion = (): Question => {
+  const timeOfDay = randomChoice(['morning', 'afternoon', 'evening', 'night']);
+  const activity = randomChoice(TIME_OF_DAY_ACTIVITIES[timeOfDay]);
+  
+  return {
+    type: 'time_of_day',
+    activity,
+    correctTimeOfDay: timeOfDay,
+    prompt: 'When do we do this?',
+  };
+};
+
+const generateWhatComesFirstQuestion = (): Question => {
+  // Pick two activities with different order
+  const idx1 = Math.floor(Math.random() * (ORDERED_DAILY_ACTIVITIES.length - 2));
+  const idx2 = idx1 + 2 + Math.floor(Math.random() * (ORDERED_DAILY_ACTIVITIES.length - idx1 - 2));
+  
+  const activityA = ORDERED_DAILY_ACTIVITIES[idx1];
+  const activityB = ORDERED_DAILY_ACTIVITIES[Math.min(idx2, ORDERED_DAILY_ACTIVITIES.length - 1)];
+  
+  const askForFirst = Math.random() > 0.5;
+  const swapPositions = Math.random() > 0.5;
+  
+  const finalA = swapPositions ? activityB : activityA;
+  const finalB = swapPositions ? activityA : activityB;
+  
+  // The earlier one is always activityA (original), after swap we need to track
+  const correctAnswer: 'A' | 'B' = askForFirst
+    ? (swapPositions ? 'B' : 'A')
+    : (swapPositions ? 'A' : 'B');
+  
+  return {
+    type: 'what_comes_first',
+    activityA: finalA,
+    activityB: finalB,
+    correctAnswer,
+    askForFirst,
+    prompt: askForFirst ? 'Which happens FIRST?' : 'Which happens LAST?',
+  };
+};
+
+const generateDurationComparisonQuestion = (): Question => {
+  const pair = randomChoice(DURATION_PAIRS);
+  const askForLonger = Math.random() > 0.5;
+  const swapPositions = Math.random() > 0.5;
+  
+  const activityA = swapPositions ? pair.shorter : pair.longer;
+  const activityB = swapPositions ? pair.longer : pair.shorter;
+  
+  const correctAnswer: 'A' | 'B' = askForLonger 
+    ? (swapPositions ? 'B' : 'A')
+    : (swapPositions ? 'A' : 'B');
+  
+  return {
+    type: 'duration_comparison',
+    activityA,
+    activityB,
+    correctAnswer,
+    askForLonger,
+    prompt: askForLonger ? 'Which takes LONGER?' : 'Which is QUICKER?',
+  };
+};
+
+const generateDaysOfWeekQuestion = (): Question => {
+  const dayIndex = Math.floor(Math.random() * 7);
+  const referenceDay = DAYS[dayIndex];
+  const askForAfter = Math.random() > 0.5;
+  
+  const correctIndex = askForAfter 
+    ? (dayIndex + 1) % 7 
+    : (dayIndex - 1 + 7) % 7;
+  const correctDay = DAYS[correctIndex];
+  
+  // Generate 2 wrong options
+  const wrongDays = DAYS.filter(d => d !== correctDay && d !== referenceDay)
+    .sort(() => Math.random() - 0.5)
+    .slice(0, 2);
+  
+  const dayOptions = shuffle([correctDay, ...wrongDays]);
+  
+  return {
+    type: 'days_of_week',
+    referenceDay,
+    askForAfter,
+    dayOptions,
+    correctDay,
+    prompt: `What day comes ${askForAfter ? 'AFTER' : 'BEFORE'} ${referenceDay}?`,
+  };
+};
+
+const generateQuestion = (round: number): Question => {
+  // Distribute question types across 20 rounds
+  const types: QuestionType[] = [
+    'set_clock', 'time_of_day', 'what_comes_first', 'duration_comparison', 'days_of_week'
+  ];
+  
+  // Ensure variety - cycle through types with some randomness
+  const typeIndex = (round - 1) % 5;
+  const type = types[typeIndex];
+  
+  switch (type) {
+    case 'set_clock':
+      return generateSetClockQuestion();
+    case 'time_of_day':
+      return generateTimeOfDayQuestion();
+    case 'what_comes_first':
+      return generateWhatComesFirstQuestion();
+    case 'duration_comparison':
+      return generateDurationComparisonQuestion();
+    case 'days_of_week':
+      return generateDaysOfWeekQuestion();
+    default:
+      return generateSetClockQuestion();
+  }
+};
 
 // ============================================
 // MAIN GAME COMPONENT
 // ============================================
 const TickTockGame: React.FC = () => {
-  const store = useTickTockStore();
-  const [selectedSlot, setSelectedSlot] = useState<number | null>(null);
-  const [windowSize, setWindowSize] = useState({ width: 300, height: 300 });
+  const [gameState, setGameState] = useState<GameState>({
+    gamePhase: 'welcome',
+    currentRound: 0,
+    totalRounds: 20,
+    score: 0,
+    correctAnswers: 0,
+    currentQuestion: null,
+    questionPoints: 10,
+    wrongAttempts: 0,
+    showWrongFeedback: false,
+    showCorrectFeedback: false,
+    clockHour: 12,
+  });
+  
+  const [windowSize, setWindowSize] = useState({ width: 280, height: 280 });
   
   useEffect(() => {
     const updateSize = () => {
-      const size = Math.min(window.innerWidth * 0.8, 300);
+      const size = Math.min(window.innerWidth * 0.7, 280);
       setWindowSize({ width: size, height: size });
     };
     updateSize();
@@ -143,19 +411,152 @@ const TickTockGame: React.FC = () => {
     return () => window.removeEventListener('resize', updateSize);
   }, []);
   
-  // Calculate stars for celebration
+  // Start a new question
+  const startNextQuestion = useCallback(() => {
+    const nextRound = gameState.currentRound + 1;
+    
+    if (nextRound > gameState.totalRounds) {
+      setGameState(prev => ({ ...prev, gamePhase: 'celebrating' }));
+      return;
+    }
+    
+    const newQuestion = generateQuestion(nextRound);
+    
+    setGameState(prev => ({
+      ...prev,
+      currentRound: nextRound,
+      currentQuestion: newQuestion,
+      questionPoints: 5,
+      wrongAttempts: 0,
+      showWrongFeedback: false,
+      showCorrectFeedback: false,
+      clockHour: Math.floor(Math.random() * 12) + 1, // Random starting position
+    }));
+  }, [gameState.currentRound, gameState.totalRounds]);
+  
+  // Handle correct answer
+  const handleCorrect = useCallback(() => {
+    setGameState(prev => ({
+      ...prev,
+      showCorrectFeedback: true,
+      score: prev.score + prev.questionPoints,
+      correctAnswers: prev.correctAnswers + 1,
+    }));
+    
+    // Auto-advance after celebration
+    setTimeout(() => {
+      startNextQuestion();
+    }, 1500);
+  }, [startNextQuestion]);
+  
+  // Handle wrong answer
+  const handleWrong = useCallback(() => {
+    // Determine penalty based on number of options for current question type
+    // 2-option questions: what_comes_first, duration_comparison get higher penalty (-2)
+    // Multi-option questions: days_of_week (3 options), time_of_day (4 options) get lower penalty (-1)
+    const questionType = gameState.currentQuestion?.type;
+    const penaltyAmount = (questionType === 'what_comes_first' || questionType === 'duration_comparison') ? 2 : 1;
+    
+    setGameState(prev => ({
+      ...prev,
+      showWrongFeedback: true,
+      wrongAttempts: prev.wrongAttempts + 1,
+      questionPoints: Math.max(1, prev.questionPoints - penaltyAmount),
+    }));
+    
+    // Clear shake after animation
+    setTimeout(() => {
+      setGameState(prev => ({ ...prev, showWrongFeedback: false }));
+    }, 500);
+  }, [gameState.currentQuestion?.type]);
+  
+  // Start the game
+  const startGame = () => {
+    setGameState({
+      gamePhase: 'playing',
+      currentRound: 0,
+      totalRounds: 20,
+      score: 0,
+      correctAnswers: 0,
+      currentQuestion: null,
+      questionPoints: 5,
+      wrongAttempts: 0,
+      showWrongFeedback: false,
+      showCorrectFeedback: false,
+      clockHour: 12,
+    });
+    
+    setTimeout(() => {
+      const firstQuestion = generateQuestion(1);
+      setGameState(prev => ({
+        ...prev,
+        currentRound: 1,
+        currentQuestion: firstQuestion,
+        clockHour: Math.floor(Math.random() * 12) + 1,
+      }));
+    }, 100);
+  };
+  
+  // Reset game
+  const resetGame = () => {
+    setGameState({
+      gamePhase: 'welcome',
+      currentRound: 0,
+      totalRounds: 20,
+      score: 0,
+      correctAnswers: 0,
+      currentQuestion: null,
+      questionPoints: 5,
+      wrongAttempts: 0,
+      showWrongFeedback: false,
+      showCorrectFeedback: false,
+      clockHour: 12,
+    });
+  };
+  
+  // Calculate stars for celebration (based on 100-point max)
   const calculateStars = (score: number): number => {
     if (score >= 90) return 5;
-    if (score >= 75) return 4;
-    if (score >= 60) return 3;
-    if (score >= 40) return 2;
+    if (score >= 70) return 4;
+    if (score >= 50) return 3;
+    if (score >= 30) return 2;
     return 1;
   };
+  
+  // Adjust clock hour
+  const adjustClock = (delta: number) => {
+    setGameState(prev => {
+      let newHour = prev.clockHour + delta;
+      if (newHour > 12) newHour = 1;
+      if (newHour < 1) newHour = 12;
+      return { ...prev, clockHour: newHour };
+    });
+  };
+  
+  // Check if clock is correct
+  const checkClock = useCallback(() => {
+    if (gameState.currentQuestion?.type !== 'set_clock') return;
+    
+    if (gameState.clockHour === gameState.currentQuestion.targetHour) {
+      handleCorrect();
+    } else {
+      handleWrong();
+    }
+  }, [gameState.clockHour, gameState.currentQuestion, handleCorrect, handleWrong]);
+  
+  // Auto-check clock when hour changes to correct value
+  useEffect(() => {
+    if (gameState.currentQuestion?.type === 'set_clock' && 
+        gameState.clockHour === gameState.currentQuestion.targetHour &&
+        !gameState.showCorrectFeedback) {
+      handleCorrect();
+    }
+  }, [gameState.clockHour, gameState.currentQuestion, gameState.showCorrectFeedback, handleCorrect]);
   
   // ============================================
   // WELCOME SCREEN
   // ============================================
-  if (store.gamePhase === 'welcome') {
+  if (gameState.gamePhase === 'welcome') {
     return (
       <div className="min-h-screen w-full bg-gradient-to-br from-indigo-400 via-purple-500 to-pink-500 flex items-center justify-center p-4">
         <motion.div
@@ -172,143 +573,53 @@ const TickTockGame: React.FC = () => {
               🕐
             </motion.div>
             
+            <motion.div
+              animate={{ y: [0, -8, 0] }}
+              transition={{ duration: 1.5, repeat: Infinity }}
+              className="text-5xl mb-2"
+            >
+              🐦
+            </motion.div>
+            
             <h1 className="text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-2">
               Tick-Tock Town
             </h1>
             
             <p className="text-gray-600 text-lg mb-6">
-              Learn about Time with Cuckoo the Clock Bird! 🐦
+              Learn about Time with Cuckoo the Clock Bird!
             </p>
             
             <div className="bg-indigo-50 rounded-xl p-4 mb-6 text-left">
-              <h3 className="font-bold text-indigo-700 mb-2">📚 You'll Learn:</h3>
-              <ul className="text-sm text-gray-600 space-y-1">
-                <li>🕐 Reading the clock</li>
-                <li>🌅 Morning, Afternoon, Evening, Night</li>
-                <li>📅 Days of the week</li>
-                <li>⏱️ Which takes longer or shorter</li>
-                <li>🔢 Order of events</li>
+              <h3 className="font-bold text-indigo-700 mb-2">🎯 What you'll do:</h3>
+              <ul className="text-sm text-gray-600 space-y-2">
+                <li className="flex items-center gap-2">
+                  <span className="text-xl">🕐</span> Set the clock to the right time
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="text-xl">🌅</span> Match activities to time of day
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="text-xl">📅</span> Learn days of the week
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="text-xl">⏱️</span> Compare how long things take
+                </li>
               </ul>
             </div>
             
             <div className="bg-yellow-50 rounded-xl p-3 mb-6 border border-yellow-200">
               <p className="text-sm text-yellow-800">
-                🎯 Answer 20 questions to become a <strong>Time Master!</strong>
+                <strong>👆 Just tap</strong> the correct answer - no buttons needed!
               </p>
             </div>
             
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              onClick={() => store.startGame()}
+              onClick={startGame}
               className="w-full bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white font-bold py-4 px-8 rounded-full shadow-lg transition text-xl"
             >
-              🎮 Start Adventure!
-            </motion.button>
-          </div>
-        </motion.div>
-      </div>
-    );
-  }
-  
-  // ============================================
-  // DIFFICULTY SELECTION SCREEN
-  // ============================================
-  if (store.gamePhase === 'difficulty_select') {
-    return (
-      <div className="min-h-screen w-full bg-gradient-to-br from-indigo-400 via-purple-500 to-pink-500 flex items-center justify-center p-4">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="max-w-lg w-full"
-        >
-          <div className="bg-white rounded-3xl p-8 shadow-2xl text-center">
-            <motion.div
-              animate={{ y: [0, -5, 0] }}
-              transition={{ duration: 2, repeat: Infinity }}
-              className="text-6xl mb-4"
-            >
-              🐦
-            </motion.div>
-            
-            <h2 className="text-2xl font-bold text-gray-800 mb-2">
-              Choose Your Level!
-            </h2>
-            <p className="text-gray-600 mb-6">
-              How well do you know about Time?
-            </p>
-            
-            {/* Easy Level */}
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => store.selectDifficulty('easy')}
-              className="w-full mb-4 p-4 rounded-xl border-3 border-green-400 bg-green-50 hover:bg-green-100 transition-all text-left"
-            >
-              <div className="flex items-center gap-4">
-                <span className="text-4xl">🌱</span>
-                <div>
-                  <h3 className="font-bold text-green-700 text-lg">Easy</h3>
-                  <p className="text-sm text-green-600">
-                    Clock reading & Time of Day
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    🕐 Set clock • 📖 Read clock • 🌅 Morning/Evening
-                  </p>
-                </div>
-              </div>
-            </motion.button>
-            
-            {/* Medium Level */}
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => store.selectDifficulty('medium')}
-              className="w-full mb-4 p-4 rounded-xl border-3 border-yellow-400 bg-yellow-50 hover:bg-yellow-100 transition-all text-left"
-            >
-              <div className="flex items-center gap-4">
-                <span className="text-4xl">🌟</span>
-                <div>
-                  <h3 className="font-bold text-yellow-700 text-lg">Medium</h3>
-                  <p className="text-sm text-yellow-600">
-                    + Days of Week & Sequences
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    📅 Days order • 🔢 Event sequences • ➡️ Before/After
-                  </p>
-                </div>
-              </div>
-            </motion.button>
-            
-            {/* Hard Level */}
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => store.selectDifficulty('hard')}
-              className="w-full mb-4 p-4 rounded-xl border-3 border-red-400 bg-red-50 hover:bg-red-100 transition-all text-left"
-            >
-              <div className="flex items-center gap-4">
-                <span className="text-4xl">🔥</span>
-                <div>
-                  <h3 className="font-bold text-red-700 text-lg">Hard</h3>
-                  <p className="text-sm text-red-600">
-                    + Duration & Earlier/Later
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    ⏱️ Longer/Shorter • 🌞 Earlier/Later • All questions!
-                  </p>
-                </div>
-              </div>
-            </motion.button>
-            
-            {/* Back button */}
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => store.resetGame()}
-              className="text-gray-500 hover:text-gray-700 font-medium mt-2"
-            >
-              ← Back to Welcome
+              🎮 Let's Play!
             </motion.button>
           </div>
         </motion.div>
@@ -319,8 +630,9 @@ const TickTockGame: React.FC = () => {
   // ============================================
   // CELEBRATION SCREEN
   // ============================================
-  if (store.gamePhase === 'celebrating') {
-    const stars = calculateStars(store.score);
+  if (gameState.gamePhase === 'celebrating') {
+    const stars = calculateStars(gameState.score);
+    const maxScore = gameState.totalRounds * 10;
     
     return (
       <div className="min-h-screen w-full bg-gradient-to-br from-yellow-400 via-orange-500 to-pink-500 flex items-center justify-center p-4">
@@ -330,6 +642,21 @@ const TickTockGame: React.FC = () => {
           className="max-w-lg w-full"
         >
           <div className="bg-white rounded-3xl p-8 shadow-2xl text-center">
+            {/* Confetti effect */}
+            <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-3xl">
+              {[...Array(20)].map((_, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ y: -20, x: Math.random() * 300, opacity: 1 }}
+                  animate={{ y: 400, opacity: 0 }}
+                  transition={{ duration: 2, delay: Math.random() * 2, repeat: Infinity }}
+                  className="absolute text-2xl"
+                >
+                  {['🎉', '⭐', '🎊', '✨', '🌟'][i % 5]}
+                </motion.div>
+              ))}
+            </div>
+            
             <motion.div
               animate={{ 
                 scale: [1, 1.2, 1],
@@ -341,19 +668,17 @@ const TickTockGame: React.FC = () => {
               🏆
             </motion.div>
             
-            <h2 className="text-3xl font-bold text-orange-600 mb-2">
+            <motion.div
+              animate={{ y: [0, -10, 0] }}
+              transition={{ duration: 1, repeat: Infinity }}
+              className="text-5xl mb-2"
+            >
+              🐦
+            </motion.div>
+            
+            <h2 className="text-3xl font-bold text-orange-600 mb-4">
               You're a Time Master!
             </h2>
-            
-            {/* Difficulty Badge */}
-            <div className={`inline-block px-4 py-1 rounded-full text-sm font-bold mb-4 ${
-              store.difficulty === 'easy' ? 'bg-green-100 text-green-700' :
-              store.difficulty === 'medium' ? 'bg-yellow-100 text-yellow-700' :
-              'bg-red-100 text-red-700'
-            }`}>
-              {store.difficulty === 'easy' ? '🌱 Easy' : 
-               store.difficulty === 'medium' ? '🌟 Medium' : '🔥 Hard'} Level
-            </div>
             
             <div className="text-5xl mb-4">
               {Array(stars).fill('⭐').join('')}
@@ -362,110 +687,21 @@ const TickTockGame: React.FC = () => {
             
             <div className="bg-gradient-to-r from-indigo-100 to-purple-100 rounded-xl p-6 mb-6">
               <div className="text-4xl font-bold text-indigo-600">
-                {store.score}/100
+                {gameState.score}/{maxScore}
               </div>
-              <div className="text-gray-600">
-                {store.correctAnswers} out of {store.totalRounds} correct
+              <div className="text-gray-600 text-lg">
+                {gameState.correctAnswers} out of {gameState.totalRounds} correct!
               </div>
-            </div>
-            
-            <div className="flex gap-4 justify-center">
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => store.resetGame()}
-                className="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white font-bold py-3 px-6 rounded-full shadow-lg transition flex items-center gap-2"
-              >
-                <RotateCcw size={20} />
-                Play Again
-              </motion.button>
-            </div>
-          </div>
-        </motion.div>
-      </div>
-    );
-  }
-  
-  // ============================================
-  // FEEDBACK OVERLAY
-  // ============================================
-  if (store.gamePhase === 'feedback') {
-    return (
-      <div className={`min-h-screen w-full flex items-center justify-center p-4 ${
-        store.isCorrect 
-          ? 'bg-gradient-to-br from-green-400 via-emerald-500 to-teal-500'
-          : 'bg-gradient-to-br from-orange-400 via-red-500 to-pink-500'
-      }`}>
-        <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="max-w-md w-full"
-        >
-          <div className="bg-white rounded-3xl p-8 shadow-2xl text-center">
-            <motion.div
-              animate={store.isCorrect ? {
-                scale: [1, 1.3, 1],
-                rotate: [0, -15, 15, 0],
-              } : {
-                x: [-5, 5, -5, 5, 0],
-              }}
-              transition={{ duration: 0.5 }}
-              className="text-7xl mb-4"
-            >
-              {store.isCorrect ? '🎉' : '🤔'}
-            </motion.div>
-            
-            <h2 className={`text-2xl font-bold mb-4 ${
-              store.isCorrect ? 'text-green-600' : 'text-orange-600'
-            }`}>
-              {store.feedbackMessage}
-            </h2>
-            
-            {/* Show correct answer for sequence/order questions */}
-            {!store.isCorrect && store.currentQuestion && (
-              <div className="bg-yellow-50 rounded-xl p-4 mb-4 border border-yellow-200">
-                {store.currentQuestion.type === 'set_clock' && store.currentQuestion.targetHour && (
-                  <p className="text-gray-700">
-                    The correct time was <strong>{store.currentQuestion.targetHour} o'clock</strong>
-                  </p>
-                )}
-                {(store.currentQuestion.type === 'read_clock' || 
-                  store.currentQuestion.type === 'days_before_after' ||
-                  store.currentQuestion.type === 'daily_routine') && (
-                  <p className="text-gray-700">
-                    The correct answer was <strong>{store.currentQuestion.correctAnswer}</strong>
-                  </p>
-                )}
-                {store.currentQuestion.type === 'duration' && (
-                  <p className="text-gray-700">
-                    {store.currentQuestion.correctAnswer === 'A' 
-                      ? store.currentQuestion.optionA?.text
-                      : store.currentQuestion.optionB?.text
-                    } takes {store.currentQuestion.askForLonger ? 'longer' : 'shorter'} time
-                  </p>
-                )}
-                {store.currentQuestion.type === 'earlier_later' && (
-                  <p className="text-gray-700">
-                    {store.currentQuestion.correctAnswer === 'A' 
-                      ? store.currentQuestion.optionA?.text
-                      : store.currentQuestion.optionB?.text
-                    } happens {store.currentQuestion.askForEarlier ? 'earlier' : 'later'}
-                  </p>
-                )}
-              </div>
-            )}
-            
-            <div className="text-gray-500 mb-6">
-              Round {store.currentRound} of {store.totalRounds} • Score: {store.score}/100
             </div>
             
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              onClick={() => store.nextQuestion()}
-              className="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white font-bold py-4 px-8 rounded-full shadow-lg transition flex items-center gap-2 mx-auto"
+              onClick={resetGame}
+              className="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white font-bold py-4 px-8 rounded-full shadow-lg transition flex items-center gap-2 mx-auto text-xl"
             >
-              {store.currentRound >= store.totalRounds ? 'See Results' : 'Next Question'} →
+              <RotateCcw size={24} />
+              Play Again!
             </motion.button>
           </div>
         </motion.div>
@@ -474,384 +710,399 @@ const TickTockGame: React.FC = () => {
   }
   
   // ============================================
-  // PLAYING PHASE - RENDER BASED ON QUESTION TYPE
+  // PLAYING PHASE
   // ============================================
-  const question = store.currentQuestion;
-  if (!question) return null;
-  
-  const renderQuestionContent = () => {
-    switch (question.type) {
-      // ============================================
-      // SET CLOCK QUESTION
-      // ============================================
-      case 'set_clock':
-        return (
-          <div className="flex flex-col items-center">
-            <div className="bg-white rounded-2xl p-4 shadow-lg mb-6">
-              <TickTockCanvas
-                width={windowSize.width}
-                height={windowSize.height}
-                hourHandAngle={store.hourHandAngle}
-                onAngleChange={(angle) => store.setHourHandAngle(angle)}
-                interactive={true}
-              />
-            </div>
-            <p className="text-gray-600 text-sm mb-4">
-              👆 Tap on the clock to set the hour hand
-            </p>
-            <div className="text-lg font-semibold text-indigo-700 bg-indigo-50 px-4 py-2 rounded-lg">
-              Current: {Math.round(((store.hourHandAngle + 360) % 360) / 30) || 12} o'clock
-            </div>
-          </div>
-        );
-      
-      // ============================================
-      // READ CLOCK QUESTION
-      // ============================================
-      case 'read_clock':
-        return (
-          <div className="flex flex-col items-center">
-            <div className="bg-white rounded-2xl p-4 shadow-lg mb-6">
-              <TickTockCanvas
-                width={windowSize.width}
-                height={windowSize.height}
-                displayHour={question.displayHour}
-                interactive={false}
-              />
-            </div>
-            <div className="grid grid-cols-3 gap-3 w-full">
-              {question.options?.map((option, index) => (
-                <motion.button
-                  key={index}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => store.selectOption(option)}
-                  className={`py-3 px-4 rounded-xl font-bold text-lg transition-all border-3 ${
-                    store.selectedOption === option
-                      ? 'bg-indigo-500 text-white border-indigo-600'
-                      : 'bg-white text-gray-700 border-gray-200 hover:border-indigo-300'
-                  }`}
-                >
-                  {option}
-                </motion.button>
-              ))}
-            </div>
-          </div>
-        );
-      
-      // ============================================
-      // DAILY ROUTINE QUESTION
-      // ============================================
-      case 'daily_routine':
-        return (
-          <div className="flex flex-col items-center">
-            {question.activity && (
-              <div className="bg-white rounded-2xl p-6 shadow-lg mb-6 text-center">
-                <div className="text-6xl mb-2">{question.activity.emoji}</div>
-                <div className="text-xl font-semibold text-gray-700">{question.activity.text}</div>
-              </div>
-            )}
-            
-            <div className="grid grid-cols-2 gap-3 w-full">
-              <TimeOfDayButton
-                timeOfDay="morning"
-                emoji="🌅"
-                isSelected={store.selectedOption === 'morning'}
-                onClick={() => store.selectOption('morning')}
-              />
-              <TimeOfDayButton
-                timeOfDay="afternoon"
-                emoji="☀️"
-                isSelected={store.selectedOption === 'afternoon'}
-                onClick={() => store.selectOption('afternoon')}
-              />
-              <TimeOfDayButton
-                timeOfDay="evening"
-                emoji="🌆"
-                isSelected={store.selectedOption === 'evening'}
-                onClick={() => store.selectOption('evening')}
-              />
-              <TimeOfDayButton
-                timeOfDay="night"
-                emoji="🌙"
-                isSelected={store.selectedOption === 'night'}
-                onClick={() => store.selectOption('night')}
-              />
-            </div>
-          </div>
-        );
-      
-      // ============================================
-      // SEQUENCE EVENTS QUESTION
-      // ============================================
-      case 'sequence_events':
-        const sequenceLabels = ['1st', '2nd', '3rd', '4th'];
-        return (
-          <div className="flex flex-col items-center">
-            {/* Slots */}
-            <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
-              {store.placedItems.map((item, index) => (
-                <SequenceSlot
-                  key={index}
-                  index={index}
-                  label={sequenceLabels[index] || `${index + 1}`}
-                  item={item}
-                  onRemove={() => store.removeItemFromSlot(index)}
-                  onClick={() => setSelectedSlot(index)}
-                  isSelected={selectedSlot === index}
-                />
-              ))}
-            </div>
-            
-            {/* Available items */}
-            <div className="bg-gray-100 rounded-xl p-4 w-full">
-              <p className="text-sm text-gray-500 mb-3 text-center">
-                {selectedSlot !== null 
-                  ? `👆 Tap a card to place it in slot ${sequenceLabels[selectedSlot]}`
-                  : '👆 First tap a slot above, then tap a card below'
-                }
-              </p>
-              <div className="grid grid-cols-2 gap-3">
-                {store.availableItems.map((item, index) => (
-                  <ActivityCard
-                    key={index}
-                    activity={item}
-                    isSmall={true}
-                    onClick={() => {
-                      if (selectedSlot !== null) {
-                        store.placeItemInSlot(item, selectedSlot);
-                        // Auto-advance to next empty slot
-                        const nextEmpty = store.placedItems.findIndex((p, i) => p === null && i !== selectedSlot);
-                        setSelectedSlot(nextEmpty >= 0 ? nextEmpty : null);
-                      }
-                    }}
-                    isDimmed={selectedSlot === null}
-                  />
-                ))}
-              </div>
-            </div>
-          </div>
-        );
-      
-      // ============================================
-      // DAYS ORDER QUESTION
-      // ============================================
-      case 'days_order':
-        const dayLabels = ['1st', '2nd', '3rd', '4th', '5th', '6th', '7th'];
-        return (
-          <div className="flex flex-col items-center">
-            {/* Slots */}
-            <div className="flex gap-2 mb-6 overflow-x-auto pb-2 flex-wrap justify-center">
-              {store.placedItems.map((item, index) => (
-                <SequenceSlot
-                  key={index}
-                  index={index}
-                  label={dayLabels[index]}
-                  item={item}
-                  onRemove={() => store.removeItemFromSlot(index)}
-                  onClick={() => setSelectedSlot(index)}
-                  isSelected={selectedSlot === index}
-                />
-              ))}
-            </div>
-            
-            {/* Available days */}
-            <div className="bg-gray-100 rounded-xl p-4 w-full">
-              <p className="text-sm text-gray-500 mb-3 text-center">
-                {selectedSlot !== null 
-                  ? `👆 Tap a day to place it in slot ${dayLabels[selectedSlot]}`
-                  : '👆 First tap a slot above, then tap a day below'
-                }
-              </p>
-              <div className="grid grid-cols-2 gap-2">
-                {store.availableItems.map((item, index) => (
-                  <motion.button
-                    key={index}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => {
-                      if (selectedSlot !== null) {
-                        store.placeItemInSlot(item, selectedSlot);
-                        const nextEmpty = store.placedItems.findIndex((p, i) => p === null && i !== selectedSlot);
-                        setSelectedSlot(nextEmpty >= 0 ? nextEmpty : null);
-                      }
-                    }}
-                    className={`py-2 px-3 rounded-xl font-semibold transition-all border-2 ${
-                      selectedSlot !== null
-                        ? 'bg-white text-gray-700 border-gray-200 hover:border-indigo-400'
-                        : 'bg-gray-200 text-gray-400 border-gray-200'
-                    }`}
-                  >
-                    📅 {item.text}
-                  </motion.button>
-                ))}
-              </div>
-            </div>
-          </div>
-        );
-      
-      // ============================================
-      // DAYS BEFORE/AFTER QUESTION
-      // ============================================
-      case 'days_before_after':
-        return (
-          <div className="flex flex-col items-center">
-            <div className="grid grid-cols-1 gap-3 w-full">
-              {question.options?.map((option, index) => (
-                <motion.button
-                  key={index}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => store.selectOption(option)}
-                  className={`py-4 px-6 rounded-xl font-bold text-lg transition-all border-3 flex items-center justify-center gap-3 ${
-                    store.selectedOption === option
-                      ? 'bg-indigo-500 text-white border-indigo-600'
-                      : 'bg-white text-gray-700 border-gray-200 hover:border-indigo-300'
-                  }`}
-                >
-                  <span className="text-2xl">📅</span>
-                  {option}
-                </motion.button>
-              ))}
-            </div>
-          </div>
-        );
-      
-      // ============================================
-      // DURATION COMPARISON QUESTION
-      // ============================================
-      case 'duration':
-        return (
-          <div className="flex flex-col items-center">
-            <div className="grid grid-cols-2 gap-4 w-full mb-4">
-              {/* Option A */}
-              <motion.button
-                whileHover={{ scale: 1.03 }}
-                whileTap={{ scale: 0.97 }}
-                onClick={() => store.selectOption('A')}
-                className={`p-4 rounded-xl border-3 transition-all ${
-                  store.selectedOption === 'A'
-                    ? 'bg-indigo-500 text-white border-indigo-600'
-                    : 'bg-white text-gray-700 border-gray-200 hover:border-indigo-300'
-                }`}
-              >
-                <div className="text-4xl mb-2">{question.optionA?.emoji}</div>
-                <div className="font-semibold">{question.optionA?.text}</div>
-                <div className={`text-sm mt-2 font-bold ${store.selectedOption === 'A' ? 'text-white' : 'text-indigo-500'}`}>
-                  (A)
-                </div>
-              </motion.button>
-              
-              {/* Option B */}
-              <motion.button
-                whileHover={{ scale: 1.03 }}
-                whileTap={{ scale: 0.97 }}
-                onClick={() => store.selectOption('B')}
-                className={`p-4 rounded-xl border-3 transition-all ${
-                  store.selectedOption === 'B'
-                    ? 'bg-indigo-500 text-white border-indigo-600'
-                    : 'bg-white text-gray-700 border-gray-200 hover:border-indigo-300'
-                }`}
-              >
-                <div className="text-4xl mb-2">{question.optionB?.emoji}</div>
-                <div className="font-semibold">{question.optionB?.text}</div>
-                <div className={`text-sm mt-2 font-bold ${store.selectedOption === 'B' ? 'text-white' : 'text-indigo-500'}`}>
-                  (B)
-                </div>
-              </motion.button>
-            </div>
-          </div>
-        );
-      
-      // ============================================
-      // EARLIER/LATER QUESTION
-      // ============================================
-      case 'earlier_later':
-        return (
-          <div className="flex flex-col items-center">
-            <div className="grid grid-cols-2 gap-4 w-full mb-4">
-              {/* Option A */}
-              <motion.button
-                whileHover={{ scale: 1.03 }}
-                whileTap={{ scale: 0.97 }}
-                onClick={() => store.selectOption('A')}
-                className={`p-4 rounded-xl border-3 transition-all ${
-                  store.selectedOption === 'A'
-                    ? 'bg-indigo-500 text-white border-indigo-600'
-                    : 'bg-white text-gray-700 border-gray-200 hover:border-indigo-300'
-                }`}
-              >
-                <div className="text-4xl mb-2">{question.optionA?.emoji}</div>
-                <div className="font-semibold text-sm">{question.optionA?.text}</div>
-                <div className={`text-sm mt-2 font-bold ${store.selectedOption === 'A' ? 'text-white' : 'text-indigo-500'}`}>
-                  (A)
-                </div>
-              </motion.button>
-              
-              {/* Option B */}
-              <motion.button
-                whileHover={{ scale: 1.03 }}
-                whileTap={{ scale: 0.97 }}
-                onClick={() => store.selectOption('B')}
-                className={`p-4 rounded-xl border-3 transition-all ${
-                  store.selectedOption === 'B'
-                    ? 'bg-indigo-500 text-white border-indigo-600'
-                    : 'bg-white text-gray-700 border-gray-200 hover:border-indigo-300'
-                }`}
-              >
-                <div className="text-4xl mb-2">{question.optionB?.emoji}</div>
-                <div className="font-semibold text-sm">{question.optionB?.text}</div>
-                <div className={`text-sm mt-2 font-bold ${store.selectedOption === 'B' ? 'text-white' : 'text-indigo-500'}`}>
-                  (B)
-                </div>
-              </motion.button>
-            </div>
-          </div>
-        );
-      
-      default:
-        return <div>Unknown question type</div>;
-    }
-  };
-  
-  // Check if submit is enabled
-  const isSubmitEnabled = () => {
-    switch (question.type) {
-      case 'set_clock':
-        return true; // Always can submit
-      case 'read_clock':
-      case 'daily_routine':
-      case 'days_before_after':
-      case 'duration':
-      case 'earlier_later':
-        return store.selectedOption !== null;
-      case 'sequence_events':
-      case 'days_order':
-        return store.placedItems.every(item => item !== null);
-      default:
-        return false;
-    }
-  };
+  const question = gameState.currentQuestion;
+  if (!question) {
+    return (
+      <div className="min-h-screen w-full bg-gradient-to-br from-indigo-400 via-purple-500 to-pink-500 flex items-center justify-center">
+        <div className="text-white text-2xl">Loading...</div>
+      </div>
+    );
+  }
   
   // Get background gradient based on question type
   const getBackgroundGradient = () => {
     switch (question.type) {
       case 'set_clock':
-      case 'read_clock':
         return 'from-blue-400 via-indigo-500 to-purple-500';
-      case 'daily_routine':
+      case 'time_of_day':
         return 'from-orange-400 via-pink-500 to-purple-500';
-      case 'sequence_events':
+      case 'what_comes_first':
         return 'from-green-400 via-teal-500 to-blue-500';
-      case 'days_order':
-      case 'days_before_after':
-        return 'from-cyan-400 via-blue-500 to-indigo-500';
-      case 'duration':
+      case 'duration_comparison':
         return 'from-yellow-400 via-orange-500 to-red-500';
-      case 'earlier_later':
-        return 'from-pink-400 via-purple-500 to-indigo-500';
+      case 'days_of_week':
+        return 'from-cyan-400 via-blue-500 to-indigo-500';
       default:
         return 'from-indigo-400 via-purple-500 to-pink-500';
+    }
+  };
+  
+  // Render question-specific content
+  const renderQuestionContent = () => {
+    switch (question.type) {
+      // ============================================
+      // SET CLOCK - Tap +/- to adjust, auto-checks
+      // ============================================
+      case 'set_clock':
+        return (
+          <div className="flex flex-col items-center">
+            <div className="bg-white rounded-2xl p-4 shadow-lg mb-4 relative">
+              <TickTockCanvas
+                width={windowSize.width}
+                height={windowSize.height}
+                displayHour={gameState.clockHour}
+                interactive={false}
+              />
+              
+              {/* Correct overlay */}
+              <AnimatePresence>
+                {gameState.showCorrectFeedback && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.5 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="absolute inset-0 bg-green-500/80 rounded-2xl flex items-center justify-center"
+                  >
+                    <span className="text-7xl">✅</span>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+            
+            <div className="text-2xl font-bold text-indigo-700 bg-white/90 px-6 py-3 rounded-xl shadow mb-4">
+              🕐 {gameState.clockHour} o'clock
+            </div>
+            
+            <div className="flex gap-4">
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={() => adjustClock(-1)}
+                disabled={gameState.showCorrectFeedback}
+                className="bg-red-500 hover:bg-red-600 text-white p-4 rounded-full shadow-lg disabled:opacity-50"
+              >
+                <Minus size={32} />
+              </motion.button>
+              
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={() => adjustClock(1)}
+                disabled={gameState.showCorrectFeedback}
+                className="bg-green-500 hover:bg-green-600 text-white p-4 rounded-full shadow-lg disabled:opacity-50"
+              >
+                <Plus size={32} />
+              </motion.button>
+            </div>
+            
+            <p className="text-white/80 text-sm mt-3">
+              👆 Tap + or - to change the time
+            </p>
+          </div>
+        );
+      
+      // ============================================
+      // TIME OF DAY - Tap correct time period
+      // ============================================
+      case 'time_of_day':
+        return (
+          <div className="flex flex-col items-center">
+            {/* Activity display */}
+            {question.activity && (
+              <motion.div
+                animate={gameState.showWrongFeedback ? { x: [-8, 8, -8, 8, 0] } : {}}
+                className="bg-white rounded-2xl p-6 shadow-lg mb-6 text-center relative"
+              >
+                <div className="text-7xl mb-2">{question.activity.emoji}</div>
+                <div className="text-xl font-bold text-gray-700">{question.activity.text}</div>
+                
+                {/* Correct overlay */}
+                <AnimatePresence>
+                  {gameState.showCorrectFeedback && (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.5 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="absolute inset-0 bg-green-500/80 rounded-2xl flex items-center justify-center"
+                    >
+                      <span className="text-6xl">🎉</span>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.div>
+            )}
+            
+            {/* Wrong feedback */}
+            <AnimatePresence>
+              {gameState.showWrongFeedback && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  className="text-white text-lg font-bold mb-2"
+                >
+                  ❌ Try again!
+                </motion.div>
+              )}
+            </AnimatePresence>
+            
+            {/* Time of day buttons */}
+            <div className="grid grid-cols-2 gap-3 w-full">
+              <BigTapButton
+                emoji="🌅"
+                label="Morning"
+                color="bg-gradient-to-br from-yellow-200 to-orange-300 border-orange-400 text-orange-800"
+                onClick={() => {
+                  if (question.correctTimeOfDay === 'morning') {
+                    handleCorrect();
+                  } else {
+                    handleWrong();
+                  }
+                }}
+                disabled={gameState.showCorrectFeedback}
+              />
+              <BigTapButton
+                emoji="☀️"
+                label="Afternoon"
+                color="bg-gradient-to-br from-yellow-300 to-yellow-400 border-yellow-500 text-yellow-800"
+                onClick={() => {
+                  if (question.correctTimeOfDay === 'afternoon') {
+                    handleCorrect();
+                  } else {
+                    handleWrong();
+                  }
+                }}
+                disabled={gameState.showCorrectFeedback}
+              />
+              <BigTapButton
+                emoji="🌆"
+                label="Evening"
+                color="bg-gradient-to-br from-orange-300 to-pink-400 border-pink-500 text-pink-800"
+                onClick={() => {
+                  if (question.correctTimeOfDay === 'evening') {
+                    handleCorrect();
+                  } else {
+                    handleWrong();
+                  }
+                }}
+                disabled={gameState.showCorrectFeedback}
+              />
+              <BigTapButton
+                emoji="🌙"
+                label="Night"
+                color="bg-gradient-to-br from-indigo-400 to-purple-500 border-purple-600 text-white"
+                onClick={() => {
+                  if (question.correctTimeOfDay === 'night') {
+                    handleCorrect();
+                  } else {
+                    handleWrong();
+                  }
+                }}
+                disabled={gameState.showCorrectFeedback}
+              />
+            </div>
+          </div>
+        );
+      
+      // ============================================
+      // WHAT COMES FIRST/LAST - Tap correct activity
+      // ============================================
+      case 'what_comes_first':
+        return (
+          <div className="flex flex-col items-center">
+            {/* Wrong feedback */}
+            <AnimatePresence>
+              {gameState.showWrongFeedback && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  className="text-white text-lg font-bold mb-4"
+                >
+                  ❌ Try again!
+                </motion.div>
+              )}
+            </AnimatePresence>
+            
+            {/* Correct feedback */}
+            <AnimatePresence>
+              {gameState.showCorrectFeedback && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.5 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="text-6xl mb-4"
+                >
+                  🎉
+                </motion.div>
+              )}
+            </AnimatePresence>
+            
+            <div className="grid grid-cols-2 gap-4 w-full">
+              <ActivityTapCard
+                activity={question.activityA!}
+                label="(A)"
+                onClick={() => {
+                  if (question.correctAnswer === 'A') {
+                    handleCorrect();
+                  } else {
+                    handleWrong();
+                  }
+                }}
+                disabled={gameState.showCorrectFeedback}
+                shake={gameState.showWrongFeedback}
+              />
+              <ActivityTapCard
+                activity={question.activityB!}
+                label="(B)"
+                onClick={() => {
+                  if (question.correctAnswer === 'B') {
+                    handleCorrect();
+                  } else {
+                    handleWrong();
+                  }
+                }}
+                disabled={gameState.showCorrectFeedback}
+                shake={gameState.showWrongFeedback}
+              />
+            </div>
+          </div>
+        );
+      
+      // ============================================
+      // DURATION COMPARISON - Tap longer/shorter
+      // ============================================
+      case 'duration_comparison':
+        return (
+          <div className="flex flex-col items-center">
+            {/* Wrong feedback */}
+            <AnimatePresence>
+              {gameState.showWrongFeedback && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  className="text-white text-lg font-bold mb-4"
+                >
+                  ❌ Try again!
+                </motion.div>
+              )}
+            </AnimatePresence>
+            
+            {/* Correct feedback */}
+            <AnimatePresence>
+              {gameState.showCorrectFeedback && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.5 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="text-6xl mb-4"
+                >
+                  ⏱️ 🎉
+                </motion.div>
+              )}
+            </AnimatePresence>
+            
+            <div className="grid grid-cols-2 gap-4 w-full">
+              <ActivityTapCard
+                activity={question.activityA!}
+                label="(A)"
+                onClick={() => {
+                  if (question.correctAnswer === 'A') {
+                    handleCorrect();
+                  } else {
+                    handleWrong();
+                  }
+                }}
+                disabled={gameState.showCorrectFeedback}
+                shake={gameState.showWrongFeedback}
+              />
+              <ActivityTapCard
+                activity={question.activityB!}
+                label="(B)"
+                onClick={() => {
+                  if (question.correctAnswer === 'B') {
+                    handleCorrect();
+                  } else {
+                    handleWrong();
+                  }
+                }}
+                disabled={gameState.showCorrectFeedback}
+                shake={gameState.showWrongFeedback}
+              />
+            </div>
+          </div>
+        );
+      
+      // ============================================
+      // DAYS OF WEEK - Tap correct day
+      // ============================================
+      case 'days_of_week':
+        return (
+          <div className="flex flex-col items-center">
+            {/* Reference day display */}
+            <div className="bg-white rounded-2xl p-4 shadow-lg mb-4 text-center relative">
+              <div className="text-5xl mb-2">📅</div>
+              <div className="text-xl font-bold text-gray-700">{question.referenceDay}</div>
+              
+              {/* Correct overlay */}
+              <AnimatePresence>
+                {gameState.showCorrectFeedback && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.5 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="absolute inset-0 bg-green-500/80 rounded-2xl flex items-center justify-center"
+                  >
+                    <span className="text-5xl">🎉</span>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+            
+            <div className="text-white text-lg font-semibold mb-4">
+              {question.askForAfter ? '⬇️ What comes AFTER?' : '⬆️ What comes BEFORE?'}
+            </div>
+            
+            {/* Wrong feedback */}
+            <AnimatePresence>
+              {gameState.showWrongFeedback && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  className="text-white text-lg font-bold mb-2"
+                >
+                  ❌ Try again!
+                </motion.div>
+              )}
+            </AnimatePresence>
+            
+            {/* Day options */}
+            <div className="flex flex-col gap-3 w-full">
+              {question.dayOptions?.map((day, index) => (
+                <DayButton
+                  key={index}
+                  day={day}
+                  onClick={() => {
+                    if (day === question.correctDay) {
+                      handleCorrect();
+                    } else {
+                      handleWrong();
+                    }
+                  }}
+                  disabled={gameState.showCorrectFeedback}
+                  shake={gameState.showWrongFeedback}
+                />
+              ))}
+            </div>
+          </div>
+        );
+      
+      default:
+        return <div className="text-white">Unknown question type</div>;
     }
   };
   
@@ -862,84 +1113,75 @@ const TickTockGame: React.FC = () => {
     <div className={`min-h-screen w-full bg-gradient-to-br ${getBackgroundGradient()} flex flex-col`}>
       {/* Header */}
       <div className="p-4 flex justify-between items-center">
-        <div className="flex items-center gap-4">
-          <CuckooMascot state="idle" />
+        <div className="flex items-center gap-3">
+          <CuckooMascot state={
+            gameState.showCorrectFeedback ? 'happy' : 
+            gameState.showWrongFeedback ? 'sad' : 'idle'
+          } />
           <div className="text-white">
-            <div className="flex items-center gap-2">
-              <span className="text-sm opacity-80">Round {store.currentRound}/{store.totalRounds}</span>
-              <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${
-                store.difficulty === 'easy' ? 'bg-green-400 text-green-900' :
-                store.difficulty === 'medium' ? 'bg-yellow-400 text-yellow-900' :
-                'bg-red-400 text-red-900'
-              }`}>
-                {store.difficulty === 'easy' ? '🌱' : store.difficulty === 'medium' ? '🌟' : '🔥'}
-              </span>
+            <div className="text-sm opacity-80">
+              Question {gameState.currentRound}/{gameState.totalRounds}
             </div>
-            <div className="font-bold">Score: {store.score}/100</div>
+            <div className="font-bold text-lg">
+              ⭐ {gameState.score} points
+            </div>
           </div>
         </div>
         
-        {/* Progress bar */}
-        <div className="flex-1 mx-4 max-w-xs">
-          <div className="h-3 bg-white/30 rounded-full overflow-hidden">
-            <motion.div
-              className="h-full bg-white rounded-full"
-              initial={{ width: 0 }}
-              animate={{ width: `${(store.currentRound / store.totalRounds) * 100}%` }}
-            />
+        {/* Points for this question */}
+        <div className="bg-white/20 backdrop-blur rounded-xl px-4 py-2">
+          <div className="text-white text-sm opacity-80">This question</div>
+          <div className="text-white font-bold text-xl text-center">
+            +{gameState.questionPoints}
           </div>
+        </div>
+      </div>
+      
+      {/* Progress bar */}
+      <div className="px-4 mb-2">
+        <div className="h-3 bg-white/30 rounded-full overflow-hidden">
+          <motion.div
+            className="h-full bg-white rounded-full"
+            initial={{ width: 0 }}
+            animate={{ width: `${(gameState.currentRound / gameState.totalRounds) * 100}%` }}
+          />
         </div>
       </div>
       
       {/* Question Card */}
       <div className="flex-1 flex items-center justify-center p-4">
         <motion.div
-          key={store.currentRound}
-          initial={{ opacity: 0, x: 50 }}
-          animate={{ opacity: 1, x: 0 }}
-          className="bg-white/95 backdrop-blur rounded-3xl p-6 shadow-2xl max-w-md w-full"
+          key={gameState.currentRound}
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="bg-white/20 backdrop-blur-sm rounded-3xl p-6 shadow-2xl max-w-md w-full"
         >
           {/* Question prompt */}
           <div className="text-center mb-6">
-            <h2 className="text-xl font-bold text-gray-800 mb-2">
+            <h2 className="text-xl font-bold text-white mb-2">
               🐦 Cuckoo asks:
             </h2>
-            <p className="text-lg text-indigo-600 font-semibold">
+            <p className="text-2xl text-white font-bold">
               {question.prompt}
             </p>
           </div>
           
           {/* Question content */}
           {renderQuestionContent()}
-          
-          {/* Action buttons */}
-          <div className="flex gap-3 mt-6">
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => store.skipQuestion()}
-              className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-3 px-4 rounded-full transition flex items-center justify-center gap-2"
-            >
-              <SkipForward size={18} />
-              Skip
-            </motion.button>
-            
-            <motion.button
-              whileHover={{ scale: isSubmitEnabled() ? 1.05 : 1 }}
-              whileTap={{ scale: isSubmitEnabled() ? 0.95 : 1 }}
-              onClick={() => isSubmitEnabled() && store.submitAnswer()}
-              disabled={!isSubmitEnabled()}
-              className={`flex-1 font-bold py-3 px-4 rounded-full transition flex items-center justify-center gap-2 ${
-                isSubmitEnabled()
-                  ? 'bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white'
-                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-              }`}
-            >
-              <Check size={18} />
-              Check Answer
-            </motion.button>
-          </div>
         </motion.div>
+      </div>
+      
+      {/* Home button */}
+      <div className="p-4 flex justify-center">
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={resetGame}
+          className="bg-white/20 hover:bg-white/30 text-white px-6 py-2 rounded-full flex items-center gap-2 transition"
+        >
+          <Home size={18} />
+          Exit Game
+        </motion.button>
       </div>
     </div>
   );

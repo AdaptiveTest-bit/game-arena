@@ -233,7 +233,7 @@ export const useBubblePopStore = create<BubblePopState>((set, get) => ({
       hintsUsed: 0,
       wrongAttempts: 0,
       levelStartTime: Date.now(),
-      gamePhase: 'thinking', // Start in thinking phase!
+      gamePhase: 'playing', // Start in playing phase - ready to pop!
     });
   },
 
@@ -329,7 +329,7 @@ export const useBubblePopStore = create<BubblePopState>((set, get) => ({
   },
 
   checkPops: () => {
-    const { poppedCount, studentAnswer, bubblesToPop, actionLog } = get();
+    const { poppedCount, bubblesToPop, actionLog } = get();
     
     // Log submission
     const newActionLog = [
@@ -339,8 +339,9 @@ export const useBubblePopStore = create<BubblePopState>((set, get) => ({
     
     set({ actionLog: newActionLog });
     
-    // Check if popped count matches their answer AND is correct
-    if (poppedCount === studentAnswer && poppedCount === bubblesToPop) {
+    // Check if popped count equals the target (bubblesToPop)
+    // Since we skip the thinking phase, we just check if they popped the right amount
+    if (poppedCount === bubblesToPop) {
       set({ gamePhase: 'success' });
     } else {
       set({ 

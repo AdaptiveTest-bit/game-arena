@@ -1,512 +1,675 @@
 'use client';
 
-// Coin Kingdom - Main Game Component
-// CBSE Class 1 Mathematics - Chapter 7: Money
+import React, { useState, useEffect, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 
-import React, { useEffect, useState, useCallback } from 'react';
-import dynamic from 'next/dynamic';
-import { useCoinKingdomStore } from '@/app/store/useCoinKingdomStore';
-import { GameMode, DifficultyLevel, MoneyCounterRoundConfig } from '@/app/utils/moneyUtils';
-import { Lightbulb, RotateCcw, ChevronRight, Sparkles, Trophy, Star, Home } from 'lucide-react';
+// ─────────────────────────────────────────────────────────────
+// TYPES
+// ─────────────────────────────────────────────────────────────
 
-// Dynamic import to avoid SSR issues with Konva
-const CoinKingdomCanvas = dynamic(
-  () => import('./CoinKingdomCanvas'),
-  { ssr: false, loading: () => <div className="w-full h-[450px] bg-amber-50 animate-pulse rounded-2xl" /> }
-);
+type Difficulty = 'easy' | 'medium' | 'hard';
+type GamePhase = 'welcome' | 'difficulty' | 'playing' | 'celebration';
+type GameMode = 'coin-collector' | 'count-money' | 'make-amount' | 'piggy-sort' | 'shopping';
 
-const GAME_MODES: { id: GameMode; name: string; emoji: string; description: string }[] = [
-  { id: 'coin-collector', name: 'Coin Collector', emoji: '🔍', description: 'Find the right coin or note' },
-  { id: 'piggy-bank-sort', name: 'Piggy Bank Sort', emoji: '🐷', description: 'Sort coins into piggy banks' },
-  { id: 'money-counter', name: 'Money Counter', emoji: '🧮', description: 'Count the total money' },
-  { id: 'exact-change', name: 'Exact Change', emoji: '🎯', description: 'Make the exact amount' },
-  { id: 'money-balance', name: 'Money Balance', emoji: '⚖️', description: 'Compare money amounts' },
-  { id: 'shop-and-pay', name: 'Shop & Pay', emoji: '🛒', description: 'Buy items with coins' },
+interface Coin {
+  id: number;
+  value: number;
+  emoji: string;
+  color: string;
+}
+
+interface Question {
+  id: number;
+  mode: GameMode;
+  instruction: string;
+  coins: Coin[];
+  targetAmount?: number;
+  options?: number[];
+  correctAnswer: number;
+  item?: { name: string; emoji: string; price: number };
+}
+
+// ─────────────────────────────────────────────────────────────
+// CONSTANTS
+// ─────────────────────────────────────────────────────────────
+
+const COINS: Coin[] = [
+  { id: 1, value: 1, emoji: '🪙', color: 'from-amber-300 to-amber-500' },
+  { id: 2, value: 2, emoji: '🪙', color: 'from-amber-400 to-amber-600' },
+  { id: 5, value: 5, emoji: '🪙', color: 'from-gray-300 to-gray-500' },
+  { id: 10, value: 10, emoji: '🪙', color: 'from-yellow-400 to-yellow-600' },
 ];
 
-const DIFFICULTY_OPTIONS: { id: DifficultyLevel; name: string; emoji: string; color: string; coins: string }[] = [
-  { id: 'easy', name: 'Easy', emoji: '🌟', color: 'from-green-400 to-green-500', coins: '₹1, ₹2, ₹5' },
-  { id: 'medium', name: 'Medium', emoji: '⭐', color: 'from-yellow-400 to-orange-500', coins: '₹1, ₹2, ₹5, ₹10' },
-  { id: 'hard', name: 'Hard', emoji: '💫', color: 'from-red-400 to-pink-500', coins: 'Coins + Notes' },
+const NOTES = [
+  { id: 20, value: 20, emoji: '💵', color: 'from-green-400 to-green-600' },
+  { id: 50, value: 50, emoji: '💵', color: 'from-blue-400 to-blue-600' },
 ];
+
+const SHOP_ITEMS = [
+  { name: 'Candy', emoji: '🍬', price: 2 },
+  { name: 'Apple', emoji: '🍎', price: 5 },
+  { name: 'Juice', emoji: '🧃', price: 10 },
+  { name: 'Cookie', emoji: '🍪', price: 3 },
+  { name: 'Banana', emoji: '🍌', price: 4 },
+  { name: 'Ice Cream', emoji: '🍦', price: 8 },
+  { name: 'Chocolate', emoji: '🍫', price: 7 },
+  { name: 'Toy Car', emoji: '🚗', price: 15 },
+  { name: 'Ball', emoji: '⚽', price: 12 },
+  { name: 'Book', emoji: '📕', price: 20 },
+];
+
+// ─────────────────────────────────────────────────────────────
+// QUESTION GENERATORS
+// ─────────────────────────────────────────────────────────────
+
+const generateCoinCollectorQuestion = (maxValue: number): Question => {
+  const availableCoins = COINS.filter(c => c.value <= maxValue);
+  const targetCoin = availableCoins[Math.floor(Math.random() * availableCoins.length)];
+  
+  const coins: Coin[] = [];
+  const correctCount = Math.floor(Math.random() * 3) + 2;
+  for (let i = 0; i < correctCount; i++) {
+    coins.push({ ...targetCoin, id: Date.now() + i });
+  }
+  
+  const otherCoins = availableCoins.filter(c => c.value !== targetCoin.value);
+  for (let i = 0; i < 4; i++) {
+    const other = otherCoins[Math.floor(Math.random() * otherCoins.length)];
+    coins.push({ ...other, id: Date.now() + correctCount + i });
+  }
+  coins.sort(() => Math.random() - 0.5);
+  
+  return {
+    id: Date.now(),
+    mode: 'coin-collector',
+    instruction: `Tap all the ₹${targetCoin.value} coins!`,
+    coins,
+    correctAnswer: correctCount,
+    targetAmount: targetCoin.value,
+  };
+};
+
+const generateCountMoneyQuestion = (maxTotal: number): Question => {
+  const coins: Coin[] = [];
+  let total = 0;
+  const numCoins = Math.floor(Math.random() * 3) + 2;
+  
+  for (let i = 0; i < numCoins; i++) {
+    const availableCoins = COINS.filter(c => total + c.value <= maxTotal);
+    if (availableCoins.length === 0) break;
+    const coin = availableCoins[Math.floor(Math.random() * availableCoins.length)];
+    coins.push({ ...coin, id: Date.now() + i });
+    total += coin.value;
+  }
+  
+  const options = [total];
+  while (options.length < 4) {
+    const opt = Math.floor(Math.random() * maxTotal) + 1;
+    if (!options.includes(opt)) options.push(opt);
+  }
+  options.sort(() => Math.random() - 0.5);
+  
+  return {
+    id: Date.now(),
+    mode: 'count-money',
+    instruction: 'How much money is this?',
+    coins,
+    options,
+    correctAnswer: total,
+  };
+};
+
+const generateMakeAmountQuestion = (maxAmount: number): Question => {
+  const targetAmount = Math.floor(Math.random() * (maxAmount - 5)) + 5;
+  
+  const allCoins: Coin[] = [];
+  COINS.forEach((coin, idx) => {
+    for (let i = 0; i < 3; i++) {
+      allCoins.push({ ...coin, id: Date.now() + idx * 3 + i });
+    }
+  });
+  allCoins.sort(() => Math.random() - 0.5);
+  
+  return {
+    id: Date.now(),
+    mode: 'make-amount',
+    instruction: `Make ₹${targetAmount}`,
+    coins: allCoins,
+    targetAmount,
+    correctAnswer: targetAmount,
+  };
+};
+
+const generatePiggySortQuestion = (): Question => {
+  const coins: Coin[] = [];
+  COINS.forEach((coin, idx) => {
+    const count = Math.floor(Math.random() * 2) + 1;
+    for (let i = 0; i < count; i++) {
+      coins.push({ ...coin, id: Date.now() + idx * 2 + i });
+    }
+  });
+  coins.sort(() => Math.random() - 0.5);
+  
+  const targetValue = COINS[Math.floor(Math.random() * COINS.length)].value;
+  const correctCount = coins.filter(c => c.value === targetValue).length;
+  
+  return {
+    id: Date.now(),
+    mode: 'piggy-sort',
+    instruction: `Put all ₹${targetValue} coins in the piggy bank!`,
+    coins,
+    targetAmount: targetValue,
+    correctAnswer: correctCount,
+  };
+};
+
+const generateShoppingQuestion = (maxPrice: number): Question => {
+  const affordableItems = SHOP_ITEMS.filter(i => i.price <= maxPrice);
+  const item = affordableItems[Math.floor(Math.random() * affordableItems.length)];
+  
+  const coins: Coin[] = [];
+  let remaining = item.price;
+  
+  while (remaining > 0) {
+    const usableCoins = COINS.filter(c => c.value <= remaining).sort((a, b) => b.value - a.value);
+    if (usableCoins.length === 0) break;
+    const coin = usableCoins[0];
+    coins.push({ ...coin, id: Date.now() + coins.length });
+    remaining -= coin.value;
+  }
+  
+  for (let i = 0; i < 4; i++) {
+    const extraCoin = COINS[Math.floor(Math.random() * COINS.length)];
+    coins.push({ ...extraCoin, id: Date.now() + coins.length + i + 100 });
+  }
+  coins.sort(() => Math.random() - 0.5);
+  
+  return {
+    id: Date.now(),
+    mode: 'shopping',
+    instruction: `Buy the ${item.name} for ₹${item.price}`,
+    coins,
+    item,
+    targetAmount: item.price,
+    correctAnswer: item.price,
+  };
+};
+
+// ─────────────────────────────────────────────────────────────
+// MAIN COMPONENT
+// ─────────────────────────────────────────────────────────────
 
 const CoinKingdomGame: React.FC = () => {
-  const {
-    currentMode,
-    difficulty,
-    roundConfig,
-    currentRound,
-    totalRounds,
-    score,
-    streak,
-    maxStreak,
-    roundsCorrect,
-    isRoundComplete,
-    isCorrect,
-    showFeedback,
-    feedbackMessage,
-    showCelebration,
-    celebrationType,
-    startGame,
-    selectCounterAnswer,
-    selectBalanceAnswer,
-    nextRound,
-    tryAgain,
-    skipRound,
-    resetGame,
-    getHintText,
-    hideCelebration,
-  } = useCoinKingdomStore();
+  const [phase, setPhase] = useState<GamePhase>('welcome');
+  const [difficulty, setDifficulty] = useState<Difficulty>('easy');
+  const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
+  const [questionNumber, setQuestionNumber] = useState(0);
+  const [totalQuestions] = useState(10);
+  const [score, setScore] = useState(0);
+  const [currentPoints, setCurrentPoints] = useState(10);
+  const [wrongAttempts, setWrongAttempts] = useState(0);
+  const [collectedCoins, setCollectedCoins] = useState<Set<number>>(new Set());
+  const [currentSum, setCurrentSum] = useState(0);
+  const [showFeedback, setShowFeedback] = useState<'correct' | 'wrong' | null>(null);
+  const [streak, setStreak] = useState(0);
 
-  const [gameState, setGameState] = useState<'menu' | 'difficulty' | 'playing' | 'complete'>('menu');
-  const [selectedMode, setSelectedMode] = useState<GameMode | null>(null);
-  const [showHint, setShowHint] = useState(false);
-  const [canvasSize, setCanvasSize] = useState({ width: 700, height: 450 });
+  const maxValue = difficulty === 'easy' ? 5 : difficulty === 'medium' ? 10 : 20;
+  const maxTotal = difficulty === 'easy' ? 10 : difficulty === 'medium' ? 20 : 50;
 
-  // Handle window resize
-  useEffect(() => {
-    const handleResize = () => {
-      const containerWidth = Math.min(window.innerWidth - 48, 800);
-      setCanvasSize({
-        width: Math.max(350, containerWidth),
-        height: 450,
-      });
-    };
+  const generateQuestion = useCallback(() => {
+    const modes: GameMode[] = difficulty === 'easy' 
+      ? ['coin-collector', 'count-money', 'piggy-sort']
+      : difficulty === 'medium'
+      ? ['coin-collector', 'count-money', 'make-amount', 'piggy-sort']
+      : ['coin-collector', 'count-money', 'make-amount', 'piggy-sort', 'shopping'];
     
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
+    const mode = modes[Math.floor(Math.random() * modes.length)];
+    
+    switch (mode) {
+      case 'coin-collector': return generateCoinCollectorQuestion(maxValue);
+      case 'count-money': return generateCountMoneyQuestion(maxTotal);
+      case 'make-amount': return generateMakeAmountQuestion(maxTotal);
+      case 'piggy-sort': return generatePiggySortQuestion();
+      case 'shopping': return generateShoppingQuestion(maxTotal);
+      default: return generateCoinCollectorQuestion(maxValue);
+    }
+  }, [difficulty, maxValue, maxTotal]);
 
-  // Handle celebration timeout
+  const startGame = (diff: Difficulty) => {
+    setDifficulty(diff);
+    setQuestionNumber(1);
+    setScore(0);
+    setStreak(0);
+    setCurrentPoints(10);
+    setWrongAttempts(0);
+    setCollectedCoins(new Set());
+    setCurrentSum(0);
+    setPhase('playing');
+  };
+
   useEffect(() => {
-    if (showCelebration && celebrationType !== 'complete') {
-      const timer = setTimeout(() => {
-        hideCelebration();
-      }, 2000);
-      return () => clearTimeout(timer);
+    if (phase === 'playing') {
+      setCurrentQuestion(generateQuestion());
+      setCollectedCoins(new Set());
+      setCurrentSum(0);
     }
-  }, [showCelebration, celebrationType, hideCelebration]);
+  }, [phase, questionNumber, generateQuestion]);
 
-  // Handle game completion
-  useEffect(() => {
-    if (celebrationType === 'complete') {
-      setGameState('complete');
-    }
-  }, [celebrationType]);
-
-  const handleModeSelect = (mode: GameMode) => {
-    setSelectedMode(mode);
-    setGameState('difficulty');
-  };
-
-  const handleDifficultySelect = (diff: DifficultyLevel) => {
-    if (selectedMode) {
-      startGame(selectedMode, diff);
-      setGameState('playing');
-      setShowHint(false);
+  const nextQuestion = () => {
+    if (questionNumber >= totalQuestions) {
+      setPhase('celebration');
+    } else {
+      setQuestionNumber(prev => prev + 1);
+      setCurrentPoints(10);
+      setWrongAttempts(0);
+      setCollectedCoins(new Set());
+      setCurrentSum(0);
+      setShowFeedback(null);
     }
   };
 
-  const handleBackToMenu = () => {
-    resetGame();
-    setGameState('menu');
-    setSelectedMode(null);
-    setShowHint(false);
+  const handleCorrect = () => {
+    setShowFeedback('correct');
+    setScore(prev => prev + currentPoints + (streak >= 3 ? 5 : 0));
+    setStreak(prev => prev + 1);
+    setTimeout(nextQuestion, 1500);
   };
 
-  // ============== RENDER: MENU ==============
-  const renderMenu = () => (
-    <div className="min-h-screen bg-gradient-to-b from-amber-100 via-yellow-50 to-orange-100 p-4 md:p-8">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl md:text-5xl font-bold text-amber-800 mb-2">
-            🪙 Coin Kingdom
+  const handleWrong = () => {
+    setShowFeedback('wrong');
+    setWrongAttempts(prev => prev + 1);
+    setCurrentPoints(prev => Math.max(1, prev - 3));
+    setStreak(0);
+    setTimeout(() => setShowFeedback(null), 800);
+  };
+
+  const handleOptionTap = (value: number) => {
+    if (!currentQuestion || showFeedback) return;
+    
+    if (value === currentQuestion.correctAnswer) {
+      handleCorrect();
+    } else {
+      handleWrong();
+    }
+  };
+
+  const handleCoinTap = (coinId: number, coinValue: number) => {
+    if (!currentQuestion || showFeedback) return;
+    
+    if (collectedCoins.has(coinId)) return;
+    
+    const mode = currentQuestion.mode;
+    
+    if (mode === 'coin-collector' || mode === 'piggy-sort') {
+      const isCorrectCoin = coinValue === currentQuestion.targetAmount;
+      
+      if (isCorrectCoin) {
+        const newCollected = new Set([...collectedCoins, coinId]);
+        setCollectedCoins(newCollected);
+        
+        const targetCount = currentQuestion.coins.filter(c => c.value === currentQuestion.targetAmount).length;
+        if (newCollected.size === targetCount) {
+          handleCorrect();
+        }
+      } else {
+        handleWrong();
+      }
+    } else if (mode === 'make-amount' || mode === 'shopping') {
+      const newCollected = new Set([...collectedCoins, coinId]);
+      const newSum = currentSum + coinValue;
+      
+      setCollectedCoins(newCollected);
+      setCurrentSum(newSum);
+      
+      if (newSum === currentQuestion.targetAmount) {
+        handleCorrect();
+      } else if (newSum > currentQuestion.targetAmount!) {
+        handleWrong();
+        setCollectedCoins(new Set());
+        setCurrentSum(0);
+      }
+    }
+  };
+
+  // ─────────────────────────────────────────────────────────────
+  // RENDER: WELCOME
+  // ─────────────────────────────────────────────────────────────
+  
+  if (phase === 'welcome') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-yellow-400 via-amber-500 to-orange-500 flex items-center justify-center p-6">
+        <motion.div 
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          className="bg-white rounded-3xl shadow-2xl p-8 max-w-lg text-center"
+        >
+          <motion.div 
+            animate={{ rotate: [0, 5, -5, 0] }}
+            transition={{ repeat: Infinity, duration: 2 }}
+            className="text-8xl mb-4"
+          >
+            🏰💰
+          </motion.div>
+          
+          <h1 className="text-4xl font-bold text-amber-600 mb-4">
+            Coin Kingdom
           </h1>
-          <p className="text-lg text-amber-600">Learn about Indian Money!</p>
-        </div>
+          
+          <p className="text-gray-600 mb-6 text-lg">
+            Join Raja Rupee to learn about Indian money! 🪙
+          </p>
+          
+          <div className="bg-amber-50 rounded-xl p-4 mb-6 text-left">
+            <p className="text-amber-800 font-semibold mb-2">🎯 You&apos;ll learn:</p>
+            <ul className="text-gray-600 text-sm space-y-1">
+              <li>🪙 Recognizing Indian coins (₹1, ₹2, ₹5, ₹10)</li>
+              <li>🔢 Counting money</li>
+              <li>💳 Making exact amounts</li>
+              <li>🛒 Simple shopping</li>
+            </ul>
+          </div>
+          
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setPhase('difficulty')}
+            className="bg-gradient-to-r from-amber-500 to-yellow-500 text-white font-bold py-4 px-12 rounded-full text-xl shadow-lg"
+          >
+            Enter Kingdom! 👑
+          </motion.button>
+        </motion.div>
+      </div>
+    );
+  }
 
-        {/* Game Mode Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {GAME_MODES.map((mode) => (
-            <button
-              key={mode.id}
-              onClick={() => handleModeSelect(mode.id)}
-              className="group bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 border-2 border-transparent hover:border-amber-400"
-            >
-              <div className="text-4xl mb-3">{mode.emoji}</div>
-              <h3 className="text-xl font-bold text-gray-800 mb-2">{mode.name}</h3>
-              <p className="text-sm text-gray-500">{mode.description}</p>
-            </button>
-          ))}
-        </div>
-
-        {/* Currency Preview */}
-        <div className="mt-8 bg-white rounded-2xl p-6 shadow-lg">
-          <h3 className="text-lg font-bold text-gray-800 mb-4 text-center">Indian Currency</h3>
-          <div className="flex flex-wrap justify-center gap-4">
-            <div className="flex flex-col items-center">
-              <div className="w-12 h-12 rounded-full bg-gray-300 flex items-center justify-center text-xl font-bold">₹1</div>
-              <span className="text-xs mt-1">1 Rupee</span>
-            </div>
-            <div className="flex flex-col items-center">
-              <div className="w-12 h-12 rounded-full bg-amber-600 flex items-center justify-center text-xl font-bold text-white">₹2</div>
-              <span className="text-xs mt-1">2 Rupees</span>
-            </div>
-            <div className="flex flex-col items-center">
-              <div className="w-12 h-12 rounded-full bg-amber-700 flex items-center justify-center text-xl font-bold text-white">₹5</div>
-              <span className="text-xs mt-1">5 Rupees</span>
-            </div>
-            <div className="flex flex-col items-center">
-              <div className="w-12 h-12 rounded-full bg-yellow-500 flex items-center justify-center text-xl font-bold">₹10</div>
-              <span className="text-xs mt-1">10 Rupees</span>
-            </div>
-            <div className="flex flex-col items-center">
-              <div className="w-16 h-8 rounded bg-orange-500 flex items-center justify-center text-sm font-bold text-white">₹10</div>
-              <span className="text-xs mt-1">10 Note</span>
-            </div>
-            <div className="flex flex-col items-center">
-              <div className="w-16 h-8 rounded bg-green-600 flex items-center justify-center text-sm font-bold text-white">₹20</div>
-              <span className="text-xs mt-1">20 Note</span>
-            </div>
-            <div className="flex flex-col items-center">
-              <div className="w-16 h-8 rounded bg-blue-600 flex items-center justify-center text-sm font-bold text-white">₹50</div>
-              <span className="text-xs mt-1">50 Note</span>
-            </div>
+  // ─────────────────────────────────────────────────────────────
+  // RENDER: DIFFICULTY
+  // ─────────────────────────────────────────────────────────────
+  
+  if (phase === 'difficulty') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-yellow-400 via-amber-500 to-orange-500 flex items-center justify-center p-6">
+        <div className="max-w-2xl w-full">
+          <h2 className="text-4xl font-bold text-white text-center mb-8">Choose Your Treasury</h2>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {[
+              { level: 'easy' as Difficulty, emoji: '🥉', title: 'Bronze Coins', desc: '₹1, ₹2, ₹5 only', color: 'from-amber-400 to-amber-600' },
+              { level: 'medium' as Difficulty, emoji: '🥈', title: 'Silver Coins', desc: 'All coins, up to ₹20', color: 'from-gray-400 to-gray-600' },
+              { level: 'hard' as Difficulty, emoji: '🥇', title: 'Golden Treasury', desc: 'Coins & shopping!', color: 'from-yellow-400 to-yellow-600' },
+            ].map((d) => (
+              <motion.button
+                key={d.level}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => startGame(d.level)}
+                className={`bg-gradient-to-br ${d.color} text-white rounded-2xl p-6 shadow-xl`}
+              >
+                <div className="text-5xl mb-3">{d.emoji}</div>
+                <div className="text-xl font-bold mb-2">{d.title}</div>
+                <div className="text-sm opacity-90">{d.desc}</div>
+              </motion.button>
+            ))}
           </div>
         </div>
+      </div>
+    );
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // RENDER: CELEBRATION
+  // ─────────────────────────────────────────────────────────────
+  
+  if (phase === 'celebration') {
+    const accuracy = Math.round((score / (totalQuestions * 10)) * 100);
+    const stars = accuracy >= 90 ? 5 : accuracy >= 70 ? 4 : accuracy >= 50 ? 3 : accuracy >= 30 ? 2 : 1;
+    
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-yellow-400 via-amber-500 to-orange-500 flex items-center justify-center p-6">
+        <motion.div 
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          className="bg-white rounded-3xl shadow-2xl p-8 max-w-md text-center"
+        >
+          <motion.div 
+            animate={{ y: [0, -20, 0] }}
+            transition={{ repeat: Infinity, duration: 1 }}
+            className="text-8xl mb-4"
+          >
+            🏆
+          </motion.div>
+          
+          <h1 className="text-4xl font-bold text-amber-600 mb-4">Royal Success!</h1>
+          
+          <div className="flex justify-center gap-1 mb-6">
+            {Array(5).fill(0).map((_, i) => (
+              <motion.span 
+                key={i} 
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ delay: i * 0.1 }}
+                className={`text-4xl ${i < stars ? '' : 'opacity-30'}`}
+              >
+                ⭐
+              </motion.span>
+            ))}
+          </div>
+          
+          <div className="bg-amber-50 rounded-2xl p-6 mb-6">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <div className="text-3xl font-bold text-amber-600">₹{score}</div>
+                <div className="text-sm text-gray-600">Treasure Earned</div>
+              </div>
+              <div>
+                <div className="text-3xl font-bold text-green-600">{accuracy}%</div>
+                <div className="text-sm text-gray-600">Accuracy</div>
+              </div>
+            </div>
+          </div>
+          
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setPhase('welcome')}
+            className="bg-gradient-to-r from-amber-500 to-yellow-500 text-white font-bold py-3 px-8 rounded-full text-lg"
+          >
+            Play Again 🔄
+          </motion.button>
+        </motion.div>
+      </div>
+    );
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // RENDER: PLAYING
+  // ─────────────────────────────────────────────────────────────
+  
+  if (!currentQuestion) return null;
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-yellow-300 via-amber-400 to-orange-400 p-4">
+      <div className="max-w-2xl mx-auto">
+        {/* Header */}
+        <div className="bg-white rounded-2xl p-4 shadow-lg mb-4 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-3xl">👑</span>
+            <span className="font-bold text-amber-600">Raja Rupee</span>
+          </div>
+          
+          <div className="flex items-center gap-4">
+            <div className="bg-yellow-100 px-3 py-1 rounded-full">
+              <span className="font-bold text-yellow-700">💰 ₹{score}</span>
+            </div>
+            <div className="bg-amber-100 px-3 py-1 rounded-full">
+              <span className="font-bold text-amber-700">{questionNumber}/{totalQuestions}</span>
+            </div>
+          </div>
+          
+          <div className="text-sm text-gray-600">
+            +{currentPoints} pts
+          </div>
+        </div>
+
+        {/* Progress Bar */}
+        <div className="bg-white/50 rounded-full h-3 mb-4 overflow-hidden">
+          <motion.div 
+            className="h-full bg-gradient-to-r from-yellow-500 to-amber-500"
+            initial={{ width: 0 }}
+            animate={{ width: `${(questionNumber / totalQuestions) * 100}%` }}
+          />
+        </div>
+
+        {/* Streak */}
+        {streak >= 3 && (
+          <div className="text-center mb-2">
+            <span className="bg-orange-500 text-white px-4 py-1 rounded-full text-sm font-bold animate-pulse">
+              🔥 {streak} Streak! +5 Bonus
+            </span>
+          </div>
+        )}
+
+        {/* Question Card */}
+        <motion.div 
+          key={currentQuestion.id}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white rounded-3xl p-6 shadow-xl"
+        >
+          <h2 className="text-2xl font-bold text-center text-gray-800 mb-6">
+            {currentQuestion.instruction}
+          </h2>
+
+          {/* Shopping Item */}
+          {currentQuestion.mode === 'shopping' && currentQuestion.item && (
+            <div className="text-center mb-6">
+              <motion.div 
+                animate={{ scale: [1, 1.1, 1] }}
+                transition={{ repeat: Infinity, duration: 2 }}
+                className="inline-block bg-pink-100 rounded-2xl p-6"
+              >
+                <div className="text-6xl mb-2">{currentQuestion.item.emoji}</div>
+                <div className="text-lg font-bold text-pink-600">{currentQuestion.item.name}</div>
+                <div className="text-2xl font-bold text-green-600">₹{currentQuestion.item.price}</div>
+              </motion.div>
+            </div>
+          )}
+
+          {/* Current Sum (for make-amount and shopping) */}
+          {(currentQuestion.mode === 'make-amount' || currentQuestion.mode === 'shopping') && (
+            <div className="text-center mb-4">
+              <div className="inline-block bg-green-100 px-6 py-3 rounded-xl">
+                <span className="text-2xl font-bold text-green-700">
+                  ₹{currentSum} / ₹{currentQuestion.targetAmount}
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* Coins Display */}
+          {currentQuestion.mode !== 'count-money' && (
+            <div className="flex flex-wrap justify-center gap-4 mb-8">
+              {currentQuestion.coins.map((coin) => {
+                const isCollected = collectedCoins.has(coin.id);
+                
+                return (
+                  <motion.button
+                    key={coin.id}
+                    whileHover={{ scale: isCollected ? 1 : 1.1 }}
+                    whileTap={{ scale: isCollected ? 1 : 0.9 }}
+                    onClick={() => handleCoinTap(coin.id, coin.value)}
+                    disabled={isCollected}
+                    className={`relative w-16 h-16 rounded-full bg-gradient-to-br ${coin.color} 
+                      shadow-lg flex items-center justify-center transition-all
+                      ${isCollected ? 'opacity-30 scale-75' : 'hover:shadow-xl'}`}
+                  >
+                    <div className="text-center">
+                      <div className="text-xl font-bold text-white">₹{coin.value}</div>
+                    </div>
+                    {isCollected && (
+                      <motion.div 
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        className="absolute inset-0 flex items-center justify-center text-3xl"
+                      >
+                        ✓
+                      </motion.div>
+                    )}
+                  </motion.button>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Count Money Display */}
+          {currentQuestion.mode === 'count-money' && (
+            <>
+              <div className="flex flex-wrap justify-center gap-4 mb-8">
+                {currentQuestion.coins.map((coin, i) => (
+                  <motion.div
+                    key={coin.id}
+                    initial={{ scale: 0, rotate: -180 }}
+                    animate={{ scale: 1, rotate: 0 }}
+                    transition={{ delay: i * 0.1 }}
+                    className={`w-16 h-16 rounded-full bg-gradient-to-br ${coin.color} 
+                      shadow-lg flex items-center justify-center`}
+                  >
+                    <div className="text-xl font-bold text-white">₹{coin.value}</div>
+                  </motion.div>
+                ))}
+              </div>
+              
+              <div className="grid grid-cols-4 gap-3">
+                {currentQuestion.options?.map((opt) => (
+                  <motion.button
+                    key={opt}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => handleOptionTap(opt)}
+                    className="bg-amber-100 hover:bg-amber-200 text-amber-700 text-2xl font-bold py-4 rounded-xl transition-all"
+                  >
+                    ₹{opt}
+                  </motion.button>
+                ))}
+              </div>
+            </>
+          )}
+
+          {/* Piggy Bank (for piggy-sort) */}
+          {currentQuestion.mode === 'piggy-sort' && (
+            <div className="text-center mt-4">
+              <motion.div 
+                animate={{ scale: [1, 1.05, 1] }}
+                transition={{ repeat: Infinity, duration: 1 }}
+                className="inline-block text-6xl"
+              >
+                🐷
+              </motion.div>
+              <div className="mt-2 text-gray-600">
+                Collected: {collectedCoins.size} / {currentQuestion.correctAnswer}
+              </div>
+            </div>
+          )}
+        </motion.div>
+
+        {/* Feedback Overlay */}
+        <AnimatePresence>
+          {showFeedback && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.5 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 flex items-center justify-center pointer-events-none z-50"
+            >
+              <div className={`text-8xl ${showFeedback === 'correct' ? 'animate-bounce' : ''}`}>
+                {showFeedback === 'correct' ? '💰' : '🤔'}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );
-
-  // ============== RENDER: DIFFICULTY SELECTION ==============
-  const renderDifficultySelection = () => {
-    const mode = GAME_MODES.find(m => m.id === selectedMode);
-    
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-amber-100 via-yellow-50 to-orange-100 p-4 md:p-8">
-        <div className="max-w-2xl mx-auto">
-          {/* Back button */}
-          <button
-            onClick={() => setGameState('menu')}
-            className="flex items-center gap-2 text-amber-700 hover:text-amber-900 mb-6"
-          >
-            <ChevronRight className="rotate-180" size={20} />
-            Back to Games
-          </button>
-
-          {/* Selected mode */}
-          <div className="text-center mb-8">
-            <div className="text-5xl mb-2">{mode?.emoji}</div>
-            <h2 className="text-3xl font-bold text-amber-800">{mode?.name}</h2>
-            <p className="text-amber-600 mt-2">{mode?.description}</p>
-          </div>
-
-          {/* Difficulty options */}
-          <div className="space-y-4">
-            {DIFFICULTY_OPTIONS.map((diff) => (
-              <button
-                key={diff.id}
-                onClick={() => handleDifficultySelect(diff.id)}
-                className={`w-full bg-gradient-to-r ${diff.color} text-white rounded-xl p-5 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-102`}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <span className="text-3xl">{diff.emoji}</span>
-                    <div className="text-left">
-                      <div className="text-xl font-bold">{diff.name}</div>
-                      <div className="text-sm opacity-90">Uses: {diff.coins}</div>
-                    </div>
-                  </div>
-                  <ChevronRight size={24} />
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  // ============== RENDER: GAME COMPLETE ==============
-  const renderComplete = () => {
-    const accuracy = totalRounds > 0 ? Math.round((roundsCorrect / totalRounds) * 100) : 0;
-    const mode = GAME_MODES.find(m => m.id === currentMode);
-
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-amber-100 via-yellow-50 to-orange-100 p-4 md:p-8 flex items-center justify-center">
-        <div className="max-w-md w-full bg-white rounded-3xl shadow-2xl p-8 text-center">
-          {/* Trophy */}
-          <div className="text-6xl mb-4">🏆</div>
-          <h2 className="text-3xl font-bold text-amber-800 mb-2">Amazing Job!</h2>
-          <p className="text-amber-600 mb-6">You completed {mode?.name}!</p>
-
-          {/* Stats */}
-          <div className="grid grid-cols-2 gap-4 mb-8">
-            <div className="bg-amber-50 rounded-xl p-4">
-              <div className="text-3xl font-bold text-amber-600">{score}</div>
-              <div className="text-sm text-amber-800">Total Score</div>
-            </div>
-            <div className="bg-green-50 rounded-xl p-4">
-              <div className="text-3xl font-bold text-green-600">{accuracy}%</div>
-              <div className="text-sm text-green-800">Accuracy</div>
-            </div>
-            <div className="bg-blue-50 rounded-xl p-4">
-              <div className="text-3xl font-bold text-blue-600">{roundsCorrect}/{totalRounds}</div>
-              <div className="text-sm text-blue-800">Correct</div>
-            </div>
-            <div className="bg-purple-50 rounded-xl p-4">
-              <div className="text-3xl font-bold text-purple-600">{maxStreak}🔥</div>
-              <div className="text-sm text-purple-800">Best Streak</div>
-            </div>
-          </div>
-
-          {/* Stars */}
-          <div className="flex justify-center gap-2 mb-6">
-            {[1, 2, 3].map((star) => (
-              <Star
-                key={star}
-                size={40}
-                className={accuracy >= star * 30 ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}
-              />
-            ))}
-          </div>
-
-          {/* Actions */}
-          <div className="space-y-3">
-            <button
-              onClick={() => {
-                if (selectedMode) {
-                  startGame(selectedMode, difficulty);
-                  setGameState('playing');
-                }
-              }}
-              className="w-full bg-gradient-to-r from-amber-500 to-orange-500 text-white py-3 rounded-xl font-bold hover:opacity-90 transition-opacity"
-            >
-              Play Again
-            </button>
-            <button
-              onClick={handleBackToMenu}
-              className="w-full bg-gray-100 text-gray-700 py-3 rounded-xl font-bold hover:bg-gray-200 transition-colors flex items-center justify-center gap-2"
-            >
-              <Home size={20} />
-              Back to Menu
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  // ============== RENDER: PLAYING ==============
-  const renderPlaying = () => {
-    const mode = GAME_MODES.find(m => m.id === currentMode);
-
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-amber-100 via-yellow-50 to-orange-100 p-4">
-        <div className="max-w-4xl mx-auto">
-          {/* Header */}
-          <div className="bg-white rounded-2xl shadow-lg p-4 mb-4">
-            <div className="flex flex-wrap items-center justify-between gap-4">
-              {/* Game info */}
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={handleBackToMenu}
-                  className="text-gray-500 hover:text-gray-700"
-                >
-                  <Home size={24} />
-                </button>
-                <div>
-                  <div className="text-sm text-gray-500">
-                    {mode?.emoji} {mode?.name}
-                  </div>
-                  <div className="font-bold text-amber-800">
-                    Round {currentRound} / {totalRounds}
-                  </div>
-                </div>
-              </div>
-
-              {/* Score & Streak */}
-              <div className="flex items-center gap-4">
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-amber-600">₹{score}</div>
-                  <div className="text-xs text-gray-500">Score</div>
-                </div>
-                {streak > 0 && (
-                  <div className="bg-orange-100 px-3 py-1 rounded-full">
-                    <span className="font-bold text-orange-600">🔥 {streak}</span>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Canvas */}
-          <div className="bg-white rounded-2xl shadow-lg overflow-hidden mb-4">
-            <CoinKingdomCanvas width={canvasSize.width} height={canvasSize.height} />
-          </div>
-
-          {/* Answer Options for Money Counter */}
-          {currentMode === 'money-counter' && roundConfig && !isRoundComplete && (
-            <div className="bg-white rounded-2xl shadow-lg p-4 mb-4">
-              <p className="text-center text-gray-600 mb-3">What is the total?</p>
-              <div className="flex flex-wrap justify-center gap-3">
-                {(roundConfig as MoneyCounterRoundConfig).options.map((option) => (
-                  <button
-                    key={option}
-                    onClick={() => selectCounterAnswer(option)}
-                    className="bg-amber-100 hover:bg-amber-200 text-amber-800 px-6 py-3 rounded-xl font-bold text-lg transition-colors"
-                  >
-                    ₹{option}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Answer Options for Money Balance */}
-          {currentMode === 'money-balance' && !isRoundComplete && (
-            <div className="bg-white rounded-2xl shadow-lg p-4 mb-4">
-              <div className="flex flex-wrap justify-center gap-3">
-                <button
-                  onClick={() => selectBalanceAnswer('left')}
-                  className="bg-blue-100 hover:bg-blue-200 text-blue-800 px-6 py-3 rounded-xl font-bold transition-colors"
-                >
-                  ⬅️ Left has more
-                </button>
-                <button
-                  onClick={() => selectBalanceAnswer('equal')}
-                  className="bg-purple-100 hover:bg-purple-200 text-purple-800 px-6 py-3 rounded-xl font-bold transition-colors"
-                >
-                  ⚖️ Both equal
-                </button>
-                <button
-                  onClick={() => selectBalanceAnswer('right')}
-                  className="bg-green-100 hover:bg-green-200 text-green-800 px-6 py-3 rounded-xl font-bold transition-colors"
-                >
-                  Right has more ➡️
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Controls */}
-          <div className="flex flex-wrap items-center justify-center gap-3 mb-4">
-            {/* Hint button */}
-            <button
-              onClick={() => setShowHint(!showHint)}
-              className="bg-blue-100 hover:bg-blue-200 text-blue-700 px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors"
-            >
-              <Lightbulb size={18} />
-              {showHint ? 'Hide Hint' : 'Show Hint'}
-            </button>
-
-            {/* Next Round button */}
-            {isRoundComplete && (
-              <button
-                onClick={() => {
-                  if (currentRound >= totalRounds) {
-                    setGameState('complete');
-                  } else {
-                    nextRound();
-                  }
-                  setShowHint(false);
-                }}
-                className="bg-purple-500 hover:bg-purple-600 text-white px-6 py-2.5 rounded-lg font-bold flex items-center gap-2 animate-pulse transition-colors"
-              >
-                {currentRound >= totalRounds ? 'See Results' : 'Next Round'}
-                <ChevronRight size={18} />
-              </button>
-            )}
-
-            {/* Try Again & Skip buttons */}
-            {showFeedback && !isCorrect && !isRoundComplete && (
-              <div className="flex gap-3">
-                <button
-                  onClick={() => {
-                    tryAgain();
-                    setShowHint(false);
-                  }}
-                  className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2.5 rounded-lg font-bold flex items-center gap-2 transition-colors"
-                >
-                  <RotateCcw size={18} />
-                  Try Again
-                </button>
-                <button
-                  onClick={() => {
-                    if (currentRound >= totalRounds) {
-                      setGameState('complete');
-                    } else {
-                      skipRound();
-                    }
-                    setShowHint(false);
-                  }}
-                  className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2.5 rounded-lg font-bold flex items-center gap-2 transition-colors"
-                >
-                  Skip to Next
-                  <ChevronRight size={18} />
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Hint Display */}
-          {showHint && (
-            <div className="bg-blue-50 border-l-4 border-blue-500 rounded-r-xl p-4 mb-4">
-              <p className="text-blue-800 flex items-start gap-2">
-                <Lightbulb size={20} className="flex-shrink-0 mt-0.5" />
-                {getHintText()}
-              </p>
-            </div>
-          )}
-
-          {/* Feedback Display */}
-          {showFeedback && (
-            <div className={`rounded-xl p-4 mb-4 text-center font-bold text-lg ${
-              isCorrect 
-                ? 'bg-green-100 text-green-800 border-2 border-green-300' 
-                : 'bg-red-100 text-red-800 border-2 border-red-300'
-            }`}>
-              {feedbackMessage}
-            </div>
-          )}
-
-          {/* Celebration Overlay */}
-          {showCelebration && celebrationType !== 'complete' && (
-            <div className="fixed inset-0 pointer-events-none flex items-center justify-center z-50">
-              <div className="text-center animate-bounce">
-                {celebrationType === 'streak' ? (
-                  <>
-                    <div className="text-8xl mb-2">🔥</div>
-                    <div className="text-4xl font-bold text-orange-500">{streak} Streak!</div>
-                  </>
-                ) : (
-                  <>
-                    <div className="text-8xl mb-2">🎉</div>
-                    <div className="text-4xl font-bold text-green-500">Correct!</div>
-                  </>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  };
-
-  // ============== MAIN RENDER ==============
-  switch (gameState) {
-    case 'menu':
-      return renderMenu();
-    case 'difficulty':
-      return renderDifficultySelection();
-    case 'complete':
-      return renderComplete();
-    case 'playing':
-    default:
-      return renderPlaying();
-  }
 };
 
 export default CoinKingdomGame;

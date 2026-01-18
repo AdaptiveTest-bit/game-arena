@@ -1,13 +1,13 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useSpring, animated } from '@react-spring/web';
 import ShapeSafariCanvas from './ShapeSafariCanvas';
 import { useShapeSafariStore, ChallengeOption } from '@/app/store/useShapeSafariStore';
 import { RotateCcw, Star, Trophy, Sparkles } from 'lucide-react';
 
-// Helper function to render shape icons for options
-const ShapeIcon = ({ shape, size = 80 }: { shape: string; size?: number }) => {
+// Helper function to render shape icons for options - BIGGER for small fingers!
+const ShapeIcon = ({ shape, size = 100 }: { shape: string; size?: number }) => {
   const shapeColors: Record<string, string> = {
     circle: '#FF6B6B',
     square: '#4ECDC4',
@@ -175,6 +175,47 @@ const Celebration = ({ score, stars, level, onPlayAgain, onMenu }: {
   );
 };
 
+// Confetti burst component for correct answers
+const ConfettiBurst = () => {
+  const confettiColors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#FFB347'];
+  
+  return (
+    <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
+      {[...Array(30)].map((_, i) => (
+        <div
+          key={i}
+          className="absolute animate-confetti"
+          style={{
+            left: `${Math.random() * 100}%`,
+            top: '-20px',
+            width: `${Math.random() * 15 + 10}px`,
+            height: `${Math.random() * 15 + 10}px`,
+            backgroundColor: confettiColors[Math.floor(Math.random() * confettiColors.length)],
+            borderRadius: Math.random() > 0.5 ? '50%' : '0',
+            animationDelay: `${Math.random() * 0.5}s`,
+            animationDuration: `${Math.random() * 1 + 1.5}s`,
+          }}
+        />
+      ))}
+      <style jsx>{`
+        @keyframes confetti {
+          0% {
+            transform: translateY(0) rotate(0deg);
+            opacity: 1;
+          }
+          100% {
+            transform: translateY(100vh) rotate(720deg);
+            opacity: 0;
+          }
+        }
+        .animate-confetti {
+          animation: confetti 2s ease-out forwards;
+        }
+      `}</style>
+    </div>
+  );
+};
+
 export default function ShapeSafariGame() {
   const store = useShapeSafariStore();
   const {
@@ -183,30 +224,82 @@ export default function ShapeSafariGame() {
     score,
     stars,
     currentChallenge,
-    selectedOption,
-    showFeedback,
-    isCorrect,
     challengesCompleted,
     totalChallengesPerLevel,
     resetGame,
     startGame,
-    selectOption,
-    submitAnswer,
     nextChallenge,
   } = store;
 
-  // Auto-advance after feedback
+  // Local state for interactive tap-to-answer gameplay
+  const [wrongAttempts, setWrongAttempts] = useState<Set<string>>(new Set());
+  const [currentScore, setCurrentScore] = useState(5); // Max 5 points per question (20 × 5 = 100)
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [feedback, setFeedback] = useState<{ type: 'wrong' | 'correct' | null; optionId: string | null }>({ type: null, optionId: null });
+  const [showConfetti, setShowConfetti] = useState(false);
+  const [localScore, setLocalScore] = useState(0);
+  const [localStars, setLocalStars] = useState(0);
+  
+  // Track previous challenge ID to detect changes
+  const prevChallengeIdRef = useRef<string | null>(null);
+
+  // Reset local state when challenge changes
   useEffect(() => {
-    if (showFeedback) {
-      const timer = setTimeout(
-        () => {
-          nextChallenge();
-        },
-        isCorrect ? 1500 : 2000
-      );
-      return () => clearTimeout(timer);
+    if (currentChallenge && currentChallenge.id !== prevChallengeIdRef.current) {
+      setWrongAttempts(new Set());
+      setCurrentScore(5);
+      setShowSuccess(false);
+      setFeedback({ type: null, optionId: null });
+      setShowConfetti(false);
+      prevChallengeIdRef.current = currentChallenge.id;
     }
-  }, [showFeedback, isCorrect, nextChallenge]);
+  }, [currentChallenge]);
+
+  // Sync with store score on game start
+  useEffect(() => {
+    if (gameState === 'playing' && challengesCompleted === 0) {
+      setLocalScore(0);
+      setLocalStars(0);
+    }
+  }, [gameState, challengesCompleted]);
+
+  // Handle shape tap
+  const handleShapeTap = useCallback((optionId: string) => {
+    if (!currentChallenge || showSuccess || feedback.type === 'correct') return;
+    
+    const isCorrect = optionId === currentChallenge.correctOptionId;
+    
+    if (isCorrect) {
+      // Correct answer!
+      setShowSuccess(true);
+      setFeedback({ type: 'correct', optionId });
+      setShowConfetti(true);
+      
+      // Add points to local score (capped at 100)
+      const earnedPoints = Math.max(1, currentScore);
+      setLocalScore(prev => Math.min(100, prev + earnedPoints));
+      setLocalStars(prev => prev + 1);
+      
+      // Auto-advance after 1.5 seconds
+      setTimeout(() => {
+        setShowConfetti(false);
+        nextChallenge();
+      }, 1500);
+    } else {
+      // Wrong answer - shake and allow retry
+      setWrongAttempts(prev => new Set([...prev, optionId]));
+      // Deduct more marks when only 2 options (50% guess chance = bigger penalty)
+      const optionCount = currentChallenge.options.length;
+      const deduction = optionCount <= 2 ? 3 : 1; // -3 for 2 options, -1 for more options
+      setCurrentScore(prev => Math.max(1, prev - deduction));
+      setFeedback({ type: 'wrong', optionId });
+      
+      // Clear wrong feedback after shake animation
+      setTimeout(() => {
+        setFeedback({ type: null, optionId: null });
+      }, 600);
+    }
+  }, [currentChallenge, showSuccess, feedback.type, currentScore, nextChallenge]);
 
   // Menu screen
   if (gameState === 'menu') {
@@ -246,14 +339,14 @@ export default function ShapeSafariGame() {
             </div>
           </div>
 
-          {/* How to Play */}
+          {/* How to Play - UPDATED for tap gameplay */}
           <div className="bg-green-50 border-4 border-green-300 rounded-2xl p-4 mb-6">
             <h3 className="text-xl font-bold text-gray-800 mb-2">🎮 How to Play:</h3>
             <ul className="text-left space-y-2 text-lg text-gray-700">
-              <li>👆 <strong>SELECT</strong> the correct answer</li>
-              <li>✅ Press <strong>SUBMIT</strong> to confirm</li>
-              <li>⭐ Earn stars for correct answers!</li>
-              <li>🎯 Complete 15 challenges to win!</li>
+              <li>👆 <strong>TAP</strong> the shape you think is correct!</li>
+              <li>✅ Right answer = <strong>Celebrate & move on!</strong></li>
+              <li>🔄 Wrong? <strong>Try again!</strong> (lose 1-3 points)</li>
+              <li>⭐ Get 5 points for first try! (Max: 100)</li>
             </ul>
           </div>
 
@@ -296,15 +389,23 @@ export default function ShapeSafariGame() {
     );
   }
 
-  // Celebration screen
+  // Celebration screen - use local scores
   if (gameState === 'celebrating') {
     return (
       <Celebration
-        score={score}
-        stars={stars}
+        score={localScore || score}
+        stars={localStars || stars}
         level={level}
-        onPlayAgain={() => startGame(level)}
-        onMenu={resetGame}
+        onPlayAgain={() => {
+          setLocalScore(0);
+          setLocalStars(0);
+          startGame(level);
+        }}
+        onMenu={() => {
+          setLocalScore(0);
+          setLocalStars(0);
+          resetGame();
+        }}
       />
     );
   }
@@ -316,11 +417,18 @@ export default function ShapeSafariGame() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-100 via-purple-100 to-blue-100 p-4">
+      {/* Confetti effect on correct answer */}
+      {showConfetti && <ConfettiBurst />}
+      
       <div className="max-w-4xl mx-auto flex flex-col gap-4">
         {/* Header */}
         <div className="flex items-center justify-between bg-white rounded-2xl p-4 shadow-lg">
           <button
-            onClick={resetGame}
+            onClick={() => {
+              setLocalScore(0);
+              setLocalStars(0);
+              resetGame();
+            }}
             className="flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-xl text-gray-600 hover:bg-gray-200 transition-all"
           >
             <RotateCcw size={20} />
@@ -330,11 +438,15 @@ export default function ShapeSafariGame() {
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-1 bg-yellow-100 px-3 py-1 rounded-full">
               <Star size={20} className="text-yellow-500 fill-yellow-500" />
-              <span className="font-bold text-yellow-700">{stars}</span>
+              <span className="font-bold text-yellow-700">{localStars}</span>
             </div>
             <div className="flex items-center gap-1 bg-purple-100 px-3 py-1 rounded-full">
               <Trophy size={20} className="text-purple-500" />
-              <span className="font-bold text-purple-700">{score}</span>
+              <span className="font-bold text-purple-700">{localScore}</span>
+            </div>
+            {/* Show potential points for this question */}
+            <div className="flex items-center gap-1 bg-green-100 px-3 py-1 rounded-full">
+              <span className="text-sm text-green-700">+{currentScore} pts</span>
             </div>
           </div>
 
@@ -355,13 +467,14 @@ export default function ShapeSafariGame() {
         {/* Canvas with visualization */}
         <ShapeSafariCanvas />
 
-        {/* Answer Options */}
+        {/* Answer Options - TAP TO ANSWER! */}
         <div className="w-full">
-          <p className="text-center text-xl font-bold text-gray-700 mb-4">
-            👆 Select your answer, then press SUBMIT!
+          <p className="text-center text-2xl font-bold text-gray-700 mb-4">
+            👆 Tap the correct shape!
           </p>
 
-          <div className="grid grid-cols-2 gap-4 max-w-2xl mx-auto px-4">
+          {/* Bigger grid for small fingers */}
+          <div className="grid grid-cols-2 gap-6 max-w-3xl mx-auto px-4">
             {options.map((option: ChallengeOption, idx: number) => {
               const colors = [
                 'from-red-400 to-red-600',
@@ -372,18 +485,24 @@ export default function ShapeSafariGame() {
                 'from-pink-400 to-pink-600',
               ];
               const colorClass = colors[idx % colors.length];
-              const isSelected = selectedOption === option.id;
               const isCorrectOption = option.id === currentChallenge?.correctOptionId;
+              const wasWrong = wrongAttempts.has(option.id);
+              const isShaking = feedback.type === 'wrong' && feedback.optionId === option.id;
+              const isCorrectAndShowing = showSuccess && isCorrectOption;
 
-              let borderClass = 'border-white';
-              if (showFeedback) {
-                if (isCorrectOption) {
-                  borderClass = 'border-green-400 ring-8 ring-green-300';
-                } else if (isSelected && !isCorrectOption) {
-                  borderClass = 'border-red-400 ring-8 ring-red-300';
-                }
-              } else if (isSelected) {
-                borderClass = 'border-yellow-300 ring-8 ring-yellow-200 scale-105';
+              // Dynamic styling based on state
+              let borderClass = 'border-white/50';
+              let extraClasses = '';
+              
+              if (isCorrectAndShowing) {
+                borderClass = 'border-green-400 ring-8 ring-green-300';
+                extraClasses = 'animate-pulse scale-110';
+              } else if (isShaking) {
+                borderClass = 'border-red-500 ring-4 ring-red-300';
+                extraClasses = 'animate-shake';
+              } else if (wasWrong) {
+                borderClass = 'border-gray-400';
+                extraClasses = 'opacity-50';
               }
 
               // Check if option has a renderable shape
@@ -392,7 +511,7 @@ export default function ShapeSafariGame() {
                 'cube', 'sphere', 'cone', 'cylinder', 'cuboid'
               ].includes(option.shape);
 
-              // Hide labels for shape identification challenges - make students think!
+              // Hide labels for shape identification challenges
               const hideShapeLabel = currentChallenge?.type === 'identify-2d' || 
                                      currentChallenge?.type === 'identify-3d' ||
                                      currentChallenge?.type === 'pattern-complete' ||
@@ -401,81 +520,69 @@ export default function ShapeSafariGame() {
               return (
                 <button
                   key={option.id}
-                  onClick={() => {
-                    if (!showFeedback) {
-                      selectOption(option.id);
-                    }
-                  }}
-                  disabled={showFeedback}
-                  className={`bg-gradient-to-br ${colorClass} p-4 rounded-2xl border-4 ${borderClass} transition-all transform shadow-xl text-center text-white font-bold ${
-                    showFeedback ? 'cursor-not-allowed' : 'hover:scale-105 hover:shadow-2xl active:scale-100'
+                  onClick={() => handleShapeTap(option.id)}
+                  disabled={showSuccess || wasWrong}
+                  className={`bg-gradient-to-br ${colorClass} p-6 rounded-3xl border-4 ${borderClass} transition-all transform shadow-xl text-center text-white font-bold ${extraClasses} ${
+                    showSuccess || wasWrong ? 'cursor-not-allowed' : 'hover:scale-105 hover:shadow-2xl active:scale-95'
                   }`}
+                  style={{
+                    minHeight: '160px', // Bigger touch target for kids
+                  }}
                 >
-                  <div className="min-h-24 flex flex-col items-center justify-center gap-2">
+                  <div className="min-h-28 flex flex-col items-center justify-center gap-2">
                     {isRenderableShape ? (
                       <>
-                        <div className="bg-white/90 rounded-xl p-2 shadow-lg">
-                          <ShapeIcon shape={option.shape!} size={70} />
+                        <div className="bg-white/90 rounded-2xl p-3 shadow-lg">
+                          {/* Bigger shape icon for kids */}
+                          <ShapeIcon shape={option.shape!} size={90} />
                         </div>
-                        {/* Only show label if not a shape identification challenge */}
-                        {!hideShapeLabel && <span className="text-sm mt-1">{option.label}</span>}
+                        {!hideShapeLabel && <span className="text-lg mt-2 font-bold">{option.label}</span>}
                       </>
                     ) : (
-                      <span className="text-2xl">{option.label}</span>
+                      <span className="text-3xl font-bold">{option.label}</span>
                     )}
                   </div>
-                  <p className="text-xs mt-1 opacity-80">Option {String.fromCharCode(65 + idx)}</p>
+                  
+                  {/* Wrong attempt indicator */}
+                  {wasWrong && !isShaking && (
+                    <div className="mt-2 text-white/80 text-sm">❌ Try another!</div>
+                  )}
                 </button>
               );
             })}
           </div>
-
-          {/* Submit Button */}
-          {!showFeedback && (
-            <div className="flex justify-center mt-6">
-              <button
-                onClick={() => {
-                  if (selectedOption) {
-                    submitAnswer();
-                  }
-                }}
-                disabled={!selectedOption}
-                className={`px-12 py-4 rounded-2xl text-2xl font-bold transition-all transform shadow-xl ${
-                  selectedOption
-                    ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:scale-110 hover:shadow-2xl animate-pulse'
-                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                }`}
-              >
-                ✅ SUBMIT ANSWER
-              </button>
-            </div>
-          )}
         </div>
 
-        {/* Feedback Section */}
-        {showFeedback && (
-          <div
-            className={`w-full max-w-2xl mx-auto text-center py-6 px-8 rounded-2xl text-3xl font-bold shadow-lg animate-bounce ${
-              isCorrect
-                ? 'bg-green-200 border-4 border-green-500 text-green-800'
-                : 'bg-red-200 border-4 border-red-500 text-red-800'
-            }`}
-          >
-            {isCorrect ? (
-              <div className="flex items-center justify-center gap-3">
-                <Sparkles className="text-yellow-500" size={32} />
-                <span>Amazing! +{level * 10} points! ⭐</span>
-                <Sparkles className="text-yellow-500" size={32} />
-              </div>
-            ) : (
-              <div>
-                <p>Not quite! 🤔</p>
-                <p className="text-lg mt-2 font-normal">The correct answer is highlighted in green!</p>
-              </div>
-            )}
+        {/* Success Feedback */}
+        {showSuccess && (
+          <div className="w-full max-w-2xl mx-auto text-center py-6 px-8 rounded-2xl text-3xl font-bold shadow-lg animate-bounce bg-green-200 border-4 border-green-500 text-green-800">
+            <div className="flex items-center justify-center gap-3">
+              <Sparkles className="text-yellow-500" size={40} />
+              <span>🎉 Amazing! +{currentScore} points! ⭐</span>
+              <Sparkles className="text-yellow-500" size={40} />
+            </div>
+          </div>
+        )}
+
+        {/* Wrong attempt feedback */}
+        {feedback.type === 'wrong' && (
+          <div className="w-full max-w-md mx-auto text-center py-4 px-6 rounded-2xl text-2xl font-bold shadow-lg bg-orange-200 border-4 border-orange-400 text-orange-800 animate-bounce">
+            🤔 Try again! (-3 points)
           </div>
         )}
       </div>
+
+      {/* Shake animation CSS */}
+      <style jsx>{`
+        @keyframes shake {
+          0%, 100% { transform: translateX(0); }
+          10%, 30%, 50%, 70%, 90% { transform: translateX(-8px); }
+          20%, 40%, 60%, 80% { transform: translateX(8px); }
+        }
+        .animate-shake {
+          animation: shake 0.5s ease-in-out;
+        }
+      `}</style>
     </div>
   );
 }
