@@ -1,83 +1,21 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useEVSExplorerStore, EVSGameType } from '@/app/store/useEVSExplorerStore';
+import { useComputerScienceStore, CSGameType } from '@/app/store/useComputerScienceStore';
 import { submitTelemetry } from '@/app/utils/gameUtils';
 import { 
   RotateCcw, Trophy, ChevronRight, 
-  Users, TreeDeciduous, Home, Globe, Mountain,
-  Lightbulb, ArrowRight, Star, Heart
+  Monitor, Keyboard, Lightbulb, ArrowRight, Star
 } from 'lucide-react';
 
-type EVSCategoryType = 'my-life' | 'nature-quest' | 'food-home' | 'travel-culture';
-
-interface EVSExplorerProps {
-  initialCategory?: EVSCategoryType;
+interface ComputerScienceGamesProps {
+  initialGameType?: CSGameType;
   initialLevel?: number;
   autoStart?: boolean;
 }
 
-interface EVSCategory {
-  id: EVSCategoryType;
-  title: string;
-  subtitle: string;
-  emoji: string;
-  color: string;
-  gradientFrom: string;
-  gradientTo: string;
-  description: string;
-  topics: string[];
-}
-
-const evsCategories: EVSCategory[] = [
-  {
-    id: 'my-life',
-    title: 'My Life Explorer',
-    subtitle: 'Family & Daily Life',
-    emoji: '👨‍👩‍👧‍👦',
-    color: 'pink',
-    gradientFrom: 'from-pink-400',
-    gradientTo: 'to-rose-500',
-    description: 'Learn about family, friends, feelings & daily life',
-    topics: ['Family Members', 'Daily Routine', 'Feelings', 'Community Helpers'],
-  },
-  {
-    id: 'nature-quest',
-    title: 'Nature Quest',
-    subtitle: 'Plants & Animals',
-    emoji: '🌿',
-    color: 'green',
-    gradientFrom: 'from-green-400',
-    gradientTo: 'to-emerald-500',
-    description: 'Discover plants, animals & the environment',
-    topics: ['Plants', 'Animals', 'Water Cycle', 'Food Chains'],
-  },
-  {
-    id: 'food-home',
-    title: 'Food & Home World',
-    subtitle: 'Food & Shelter',
-    emoji: '🏠',
-    color: 'orange',
-    gradientFrom: 'from-orange-400',
-    gradientTo: 'to-amber-500',
-    description: 'Learn about food, homes & weather',
-    topics: ['Food Sources', 'Types of Houses', 'Weather', 'Clothing'],
-  },
-  {
-    id: 'travel-culture',
-    title: 'Travel & Culture',
-    subtitle: 'Transport & Communication',
-    emoji: '✈️',
-    color: 'blue',
-    gradientFrom: 'from-blue-400',
-    gradientTo: 'to-indigo-500',
-    description: 'Explore transport & communication',
-    topics: ['Transport Types', 'Communication', 'Directions', 'Places'],
-  },
-];
-
-const EVSExplorer: React.FC<EVSExplorerProps> = ({
-  initialCategory = 'my-life',
+const ComputerScienceGames: React.FC<ComputerScienceGamesProps> = ({
+  initialGameType = 'parts',
   initialLevel = 1,
   autoStart = false,
 }) => {
@@ -89,43 +27,57 @@ const EVSExplorer: React.FC<EVSExplorerProps> = ({
     resetGame,
     retryLevel,
     gameCompleted,
+    levelCompleted,
     passedLevel,
     currentLevel,
     currentQuestion,
     selectedAnswer,
     score,
-    streak,
-    bestStreak,
+    consecutiveCorrect,
     showFeedback,
     answered,
     hintUsed,
     totalAnswered,
     correctAnswers,
+    streak,
+    bestStreak,
     getTelemetryLog,
     getAccuracy,
-  } = useEVSExplorerStore();
+  } = useComputerScienceStore();
 
   const [view, setView] = useState<'categories' | 'playing' | 'completed'>(autoStart ? 'playing' : 'categories');
-  const [selectedCategory, setSelectedCategory] = useState<EVSCategoryType>(initialCategory);
+  const [selectedCategory, setSelectedCategory] = useState<CSGameType>(initialGameType);
   const [textInput, setTextInput] = useState('');
+  const [matchSelections, setMatchSelections] = useState<Record<string, string>>({});
+  const [sequenceOrder, setSequenceOrder] = useState<string[]>([]);
   const [autoInitDone, setAutoInitDone] = useState(false);
 
-  // Auto start when launched from subject selector CTA so users don't see the same start screen twice
+  // Auto start when launched from GameSelector
   React.useEffect(() => {
     if (!autoStart || autoInitDone) return;
-    setSelectedCategory(initialCategory);
-    startGame(initialCategory as EVSGameType, initialLevel);
+    setSelectedCategory(initialGameType);
+    startGame(initialGameType, initialLevel);
     setView('playing');
     setTextInput('');
+    setMatchSelections({});
+    setSequenceOrder([]);
     setAutoInitDone(true);
-  }, [autoStart, autoInitDone, initialCategory, initialLevel, startGame]);
+  }, [autoStart, autoInitDone, initialGameType, initialLevel, startGame]);
+
+  // Reset match and sequence when question changes
+  React.useEffect(() => {
+    if (currentQuestion) {
+      setMatchSelections({});
+      setSequenceOrder([]);
+    }
+  }, [currentQuestion]);
 
   const getDifficultyLabel = (level: number): string => {
     switch (level) {
       case 1: return '🟢 Easy';
       case 2: return '🟡 Medium';
       case 3: return '🔴 Hard';
-      case 4: return '🏆 Adventure';
+      case 4: return '🏆 Master';
       default: return '🟢 Easy';
     }
   };
@@ -140,24 +92,30 @@ const EVSExplorer: React.FC<EVSExplorerProps> = ({
     }
   };
 
-  const handleStartCategory = (categoryId: EVSCategoryType, level: number) => {
+  const handleStartCategory = (categoryId: CSGameType, level: number) => {
     setSelectedCategory(categoryId);
-    startGame(categoryId as EVSGameType, level);
+    startGame(categoryId, level);
     setView('playing');
     setTextInput('');
+    setMatchSelections({});
+    setSequenceOrder([]);
   };
 
   const handleReset = () => {
     resetGame();
     setView('categories');
     setTextInput('');
+    setMatchSelections({});
+    setSequenceOrder([]);
   };
 
   const handleContinue = () => {
     if (currentLevel < 4) {
-      startGame(selectedCategory as EVSGameType, currentLevel + 1);
+      startGame(selectedCategory, currentLevel + 1);
       setView('playing');
       setTextInput('');
+      setMatchSelections({});
+      setSequenceOrder([]);
     } else {
       handleReset();
     }
@@ -167,6 +125,8 @@ const EVSExplorer: React.FC<EVSExplorerProps> = ({
     retryLevel();
     setView('playing');
     setTextInput('');
+    setMatchSelections({});
+    setSequenceOrder([]);
   };
 
   const handleOptionClick = (option: string) => {
@@ -180,6 +140,35 @@ const EVSExplorer: React.FC<EVSExplorerProps> = ({
     }
   };
 
+  const handleMatchClick = (left: string, right: string) => {
+    if (answered) return;
+    const newSelections = { ...matchSelections, [left]: right };
+    setMatchSelections(newSelections);
+  };
+
+  const handleMatchSubmit = () => {
+    if (answered || !currentQuestion) return;
+    const matchString = Object.entries(matchSelections)
+      .map(([l, r]) => `${l}-${r}`)
+      .join(', ');
+    selectAnswer(matchString);
+  };
+
+  const handleSequenceClick = (item: string) => {
+    if (answered) return;
+    if (sequenceOrder.includes(item)) {
+      setSequenceOrder(sequenceOrder.filter(i => i !== item));
+    } else {
+      setSequenceOrder([...sequenceOrder, item]);
+    }
+  };
+
+  const handleSequenceSubmit = () => {
+    if (answered || !currentQuestion) return;
+    const sequenceString = sequenceOrder.join(', ');
+    selectAnswer(sequenceString);
+  };
+
   React.useEffect(() => {
     if (gameCompleted && view === 'playing') {
       const telemetryLog = getTelemetryLog();
@@ -188,25 +177,48 @@ const EVSExplorer: React.FC<EVSExplorerProps> = ({
     }
   }, [gameCompleted, view, getTelemetryLog]);
 
+  const csCategories = [
+    {
+      id: 'parts' as CSGameType,
+      title: 'Parts of Computer',
+      subtitle: 'Computer Components',
+      emoji: '🖥️',
+      color: 'purple',
+      gradientFrom: 'from-purple-400',
+      gradientTo: 'to-violet-500',
+      description: 'Learn about CPU, Monitor, Keyboard, Mouse, and other computer parts',
+      topics: ['Monitor', 'Keyboard', 'Mouse', 'CPU', 'Input/Output'],
+    },
+    {
+      id: 'operations' as CSGameType,
+      title: 'Basic Operations',
+      subtitle: 'Drawing, Typing & Shortcuts',
+      emoji: '⌨️',
+      color: 'cyan',
+      gradientFrom: 'from-cyan-400',
+      gradientTo: 'to-blue-500',
+      description: 'Learn drawing tools, typing skills, keyboard shortcuts, and basic operations',
+      topics: ['Drawing Tools', 'Typing', 'Keyboard Shortcuts', 'Basic Operations'],
+    },
+  ];
+
   // Categories Menu
   if (view === 'categories') {
-    const category = evsCategories.find(c => c.id === selectedCategory);
-    
     return (
-      <div className="min-h-screen bg-gradient-to-br from-teal-600 via-emerald-600 to-cyan-500 p-8">
+      <div className="min-h-screen bg-gradient-to-br from-purple-600 via-indigo-600 to-cyan-500 p-8">
         <div className="max-w-6xl mx-auto">
           {/* Header */}
           <div className="text-center mb-12">
-            <div className="text-6xl mb-4">🌍</div>
-            <h1 className="text-5xl font-bold text-white mb-4">EVS World</h1>
+            <div className="text-6xl mb-4">💻</div>
+            <h1 className="text-5xl font-bold text-white mb-4">Computer Science</h1>
             <p className="text-xl text-gray-100">
-              Discover My World & Nature! 🌿
+              Learn Computer Parts & Operations! 🖥️
             </p>
           </div>
 
           {/* Categories Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            {evsCategories.map((cat) => (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            {csCategories.map((cat) => (
               <button
                 key={cat.id}
                 onClick={() => handleStartCategory(cat.id, 1)}
@@ -236,24 +248,6 @@ const EVSExplorer: React.FC<EVSExplorerProps> = ({
             ))}
           </div>
 
-          {/* Adventure Mode */}
-          <div className="bg-gradient-to-br from-purple-500 via-pink-500 to-red-500 rounded-xl shadow-2xl overflow-hidden mb-8">
-            <div className="p-8 text-white text-center">
-              <div className="flex justify-center mb-4">
-                <Mountain size={64} className="text-yellow-300" />
-              </div>
-              <h2 className="text-3xl font-bold mb-2">🏆 Grand EVS Adventure</h2>
-              <p className="text-lg opacity-90 mb-4">Questions from ALL EVS topics!</p>
-              <p className="text-sm opacity-75 mb-4">Test everything you learned across all categories</p>
-              <button
-                onClick={() => handleStartCategory('my-life', 4)}
-                className="bg-white text-purple-600 font-bold py-3 px-8 rounded-full hover:bg-gray-100 transition-colors"
-              >
-                🚀 Start Adventure (Level 4)
-              </button>
-            </div>
-          </div>
-
           {/* Back Button */}
           <button
             onClick={handleReset}
@@ -275,10 +269,10 @@ const EVSExplorer: React.FC<EVSExplorerProps> = ({
       ? currentQuestion.correctAnswer[0].toLowerCase().trim()
       : currentQuestion.correctAnswer.toLowerCase().trim());
 
-  const category = evsCategories.find(c => c.id === selectedCategory);
+  const category = csCategories.find(c => c.id === selectedCategory);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-teal-50 to-emerald-100 p-8">
+    <div className="min-h-screen bg-gradient-to-b from-purple-50 to-indigo-100 p-8">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="mb-6">
@@ -305,7 +299,7 @@ const EVSExplorer: React.FC<EVSExplorerProps> = ({
           </div>
           <div className="w-full bg-gray-200 rounded-full h-4">
             <div
-              className="bg-gradient-to-r from-teal-400 to-emerald-500 h-4 rounded-full transition-all duration-500"
+              className="bg-gradient-to-r from-purple-400 to-indigo-500 h-4 rounded-full transition-all duration-500"
               style={{ width: `${progressPercent}%` }}
             ></div>
           </div>
@@ -364,22 +358,16 @@ const EVSExplorer: React.FC<EVSExplorerProps> = ({
               <div className="flex flex-wrap gap-2 mb-4">
                 <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r ${getDifficultyColor(currentLevel)} text-white`}>
                   <Star size={16} />
-                  <span className="font-semibold">{currentQuestion.chapter}</span>
-                </div>
-                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-100 text-emerald-700">
-                  <span className="font-semibold">{currentQuestion.points} pts</span>
+                  <span className="font-semibold">{currentQuestion.topic}</span>
                 </div>
                 <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-purple-100 text-purple-700">
-                  <span className="font-semibold">{currentQuestion.topic}</span>
+                  <span className="font-semibold">{currentQuestion.points} pts</span>
                 </div>
               </div>
 
               {/* Question Text */}
               <div className="bg-gradient-to-b from-gray-50 to-gray-100 rounded-lg p-6 border border-gray-200 mb-4">
                 <h2 className="text-xl font-bold text-gray-800 mb-2">{currentQuestion.question}</h2>
-                {currentQuestion.questionHindi && (
-                  <p className="text-lg text-gray-600 mt-2">{currentQuestion.questionHindi}</p>
-                )}
                 {hintUsed && !answered && (
                   <p className="text-yellow-700 mt-3 text-sm">
                     💡 Hint: {currentQuestion.hint}
@@ -387,8 +375,95 @@ const EVSExplorer: React.FC<EVSExplorerProps> = ({
                 )}
               </div>
 
-              {/* Options */}
-              {currentQuestion.type === 'mcq' && currentQuestion.options && (
+              {/* Match Type */}
+              {currentQuestion.type === 'match' && currentQuestion.matchPairs && (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <h3 className="font-bold mb-2">Left</h3>
+                      {currentQuestion.matchPairs.map((pair, idx) => (
+                        <button
+                          key={`left-${idx}`}
+                          onClick={() => {
+                            if (!answered && matchSelections[pair.left]) {
+                              const newSelections = { ...matchSelections };
+                              delete newSelections[pair.left];
+                              setMatchSelections(newSelections);
+                            }
+                          }}
+                          disabled={answered}
+                          className={`w-full p-3 mb-2 rounded-lg border-2 text-left ${
+                            matchSelections[pair.left]
+                              ? 'bg-purple-100 border-purple-500'
+                              : 'bg-white border-gray-200 hover:border-purple-300'
+                          }`}
+                        >
+                          {pair.left}
+                        </button>
+                      ))}
+                    </div>
+                    <div>
+                      <h3 className="font-bold mb-2">Right</h3>
+                      {currentQuestion.matchPairs.map((pair, idx) => (
+                        <button
+                          key={`right-${idx}`}
+                          onClick={() => !answered && handleMatchClick(pair.left, pair.right)}
+                          disabled={answered || Object.values(matchSelections).includes(pair.right)}
+                          className={`w-full p-3 mb-2 rounded-lg border-2 text-left ${
+                            Object.values(matchSelections).includes(pair.right)
+                              ? 'bg-purple-100 border-purple-500'
+                              : 'bg-white border-gray-200 hover:border-purple-300'
+                          }`}
+                        >
+                          {pair.right}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  {Object.keys(matchSelections).length === currentQuestion.matchPairs.length && !answered && (
+                    <button
+                      onClick={handleMatchSubmit}
+                      className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 rounded-lg transition-colors"
+                    >
+                      Submit Match
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {/* Sequence Type */}
+              {currentQuestion.type === 'sequence' && currentQuestion.options && (
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    {currentQuestion.options.map((item, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => handleSequenceClick(item)}
+                        disabled={answered}
+                        className={`w-full p-4 rounded-lg border-2 text-left ${
+                          sequenceOrder.includes(item)
+                            ? 'bg-purple-100 border-purple-500'
+                            : 'bg-white border-gray-200 hover:border-purple-300'
+                        }`}
+                      >
+                        <span className="mr-3 font-bold">{sequenceOrder.indexOf(item) + 1 || '?'}</span>
+                        {item}
+                      </button>
+                    ))}
+                  </div>
+                  {sequenceOrder.length === currentQuestion.options.length && !answered && (
+                    <button
+                      onClick={handleSequenceSubmit}
+                      className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 rounded-lg transition-colors"
+                    >
+                      Submit Sequence
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {/* Choose Type */}
+              {currentQuestion.type === 'choose' && currentQuestion.options && (
                 <div className="space-y-3">
                   {currentQuestion.options.map((option, idx) => {
                     const isSelected = selectedAnswer === option;
@@ -407,14 +482,14 @@ const EVSExplorer: React.FC<EVSExplorerProps> = ({
                             : showWrong 
                               ? 'bg-red-50 border-red-500'
                               : isSelected 
-                                ? 'bg-teal-50 border-teal-500'
-                                : 'bg-white border-gray-200 hover:border-teal-300'
+                                ? 'bg-purple-50 border-purple-500'
+                                : 'bg-white border-gray-200 hover:border-purple-300'
                         }`}
                       >
                         <span className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${
                           showCorrect ? 'bg-green-500 text-white' :
                           showWrong ? 'bg-red-500 text-white' :
-                          isSelected ? 'bg-teal-500 text-white' :
+                          isSelected ? 'bg-purple-500 text-white' :
                           'bg-gray-200 text-gray-700'
                         }`}>
                           {showCorrect ? '✓' : showWrong ? '✗' : String.fromCharCode(65 + idx)}
@@ -426,24 +501,22 @@ const EVSExplorer: React.FC<EVSExplorerProps> = ({
                 </div>
               )}
 
-              {/* Fill in the blank */}
-              {(currentQuestion.type === 'fill_blank' || currentQuestion.type === 'true_false' || currentQuestion.type === 'sequence') && (
+              {/* Explain Type */}
+              {(currentQuestion.type === 'explain' || currentQuestion.type === 'fill_blank') && (
                 <div>
-                  <input
-                    type="text"
+                  <textarea
                     value={textInput}
                     onChange={(e) => setTextInput(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleTextSubmit()}
                     disabled={answered}
                     placeholder="Type your answer..."
-                    className="w-full p-4 text-lg border-2 border-gray-300 rounded-lg focus:border-teal-500 focus:outline-none"
-                    maxLength={100}
+                    className="w-full p-4 text-lg border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none min-h-[120px]"
+                    maxLength={500}
                   />
                   {!answered && (
                     <button
                       onClick={handleTextSubmit}
                       disabled={!textInput.trim()}
-                      className="mt-3 w-full bg-teal-600 hover:bg-teal-700 disabled:bg-gray-300 text-white font-bold py-3 rounded-lg transition-colors"
+                      className="mt-3 w-full bg-purple-600 hover:bg-purple-700 disabled:bg-gray-300 text-white font-bold py-3 rounded-lg transition-colors"
                     >
                       Submit Answer
                     </button>
@@ -453,7 +526,7 @@ const EVSExplorer: React.FC<EVSExplorerProps> = ({
                       <p className="font-semibold mb-2">
                         {isCorrect ? '✅ Correct!' : '❌ Incorrect'}
                       </p>
-                      <p>Answer: {Array.isArray(currentQuestion.correctAnswer) ? currentQuestion.correctAnswer[0] : currentQuestion.correctAnswer}</p>
+                      <p className="text-sm text-gray-600">{currentQuestion.explanation}</p>
                     </div>
                   )}
                 </div>
@@ -470,7 +543,7 @@ const EVSExplorer: React.FC<EVSExplorerProps> = ({
                   </div>
                   <button
                     onClick={nextQuestion}
-                    className="w-full bg-gradient-to-r from-teal-500 to-emerald-600 hover:from-teal-600 hover:to-emerald-700 text-white font-bold py-4 rounded-lg transition-all transform hover:scale-105 shadow-lg flex items-center justify-center gap-2"
+                    className="w-full bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white font-bold py-4 rounded-lg transition-all transform hover:scale-105 shadow-lg flex items-center justify-center gap-2"
                   >
                     Next Question
                     <ArrowRight size={20} />
@@ -483,7 +556,7 @@ const EVSExplorer: React.FC<EVSExplorerProps> = ({
 
         {/* Completion Screen */}
         {view === 'completed' && (
-          <div className="bg-white rounded-lg shadow-lg p-8 border-2 border-teal-500">
+          <div className="bg-white rounded-lg shadow-lg p-8 border-2 border-purple-500">
             {/* Pass/Fail Header */}
             <div className="flex items-center gap-4 mb-6">
               {passedLevel ? (
@@ -528,9 +601,9 @@ const EVSExplorer: React.FC<EVSExplorerProps> = ({
                 <p className="text-gray-600 text-sm">Best Streak</p>
                 <p className="text-3xl font-bold text-blue-600">{bestStreak}</p>
               </div>
-              <div className="bg-teal-50 p-4 rounded-lg text-center">
+              <div className="bg-purple-50 p-4 rounded-lg text-center">
                 <p className="text-gray-600 text-sm">Correct/Total</p>
-                <p className="text-3xl font-bold text-teal-600">{correctAnswers}/15</p>
+                <p className="text-3xl font-bold text-purple-600">{correctAnswers}/15</p>
               </div>
             </div>
 
@@ -540,7 +613,7 @@ const EVSExplorer: React.FC<EVSExplorerProps> = ({
                 currentLevel < 4 ? (
                   <button
                     onClick={handleContinue}
-                    className="flex-1 bg-gradient-to-r from-teal-500 to-emerald-600 hover:from-teal-600 hover:to-emerald-700 text-white font-bold py-3 rounded-lg transition-colors flex items-center justify-center gap-2"
+                    className="flex-1 bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white font-bold py-3 rounded-lg transition-colors flex items-center justify-center gap-2"
                   >
                     Next Level <ChevronRight size={20} />
                   </button>
@@ -575,5 +648,4 @@ const EVSExplorer: React.FC<EVSExplorerProps> = ({
   );
 };
 
-export default EVSExplorer;
-
+export default ComputerScienceGames;

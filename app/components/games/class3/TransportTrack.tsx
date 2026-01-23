@@ -1,86 +1,15 @@
 'use client';
 
-import React, { useState } from 'react';
-import { useEVSExplorerStore, EVSGameType } from '@/app/store/useEVSExplorerStore';
+import React, { useState, useEffect } from 'react';
+import { useTransportTrackStore } from '@/app/store/useTransportTrackStore';
 import { submitTelemetry } from '@/app/utils/gameUtils';
 import { 
   RotateCcw, Trophy, ChevronRight, 
-  Users, TreeDeciduous, Home, Globe, Mountain,
-  Lightbulb, ArrowRight, Star, Heart
+  Lightbulb, ArrowRight, Star, Car,
+  Ship, Plane, Anchor
 } from 'lucide-react';
 
-type EVSCategoryType = 'my-life' | 'nature-quest' | 'food-home' | 'travel-culture';
-
-interface EVSExplorerProps {
-  initialCategory?: EVSCategoryType;
-  initialLevel?: number;
-  autoStart?: boolean;
-}
-
-interface EVSCategory {
-  id: EVSCategoryType;
-  title: string;
-  subtitle: string;
-  emoji: string;
-  color: string;
-  gradientFrom: string;
-  gradientTo: string;
-  description: string;
-  topics: string[];
-}
-
-const evsCategories: EVSCategory[] = [
-  {
-    id: 'my-life',
-    title: 'My Life Explorer',
-    subtitle: 'Family & Daily Life',
-    emoji: '👨‍👩‍👧‍👦',
-    color: 'pink',
-    gradientFrom: 'from-pink-400',
-    gradientTo: 'to-rose-500',
-    description: 'Learn about family, friends, feelings & daily life',
-    topics: ['Family Members', 'Daily Routine', 'Feelings', 'Community Helpers'],
-  },
-  {
-    id: 'nature-quest',
-    title: 'Nature Quest',
-    subtitle: 'Plants & Animals',
-    emoji: '🌿',
-    color: 'green',
-    gradientFrom: 'from-green-400',
-    gradientTo: 'to-emerald-500',
-    description: 'Discover plants, animals & the environment',
-    topics: ['Plants', 'Animals', 'Water Cycle', 'Food Chains'],
-  },
-  {
-    id: 'food-home',
-    title: 'Food & Home World',
-    subtitle: 'Food & Shelter',
-    emoji: '🏠',
-    color: 'orange',
-    gradientFrom: 'from-orange-400',
-    gradientTo: 'to-amber-500',
-    description: 'Learn about food, homes & weather',
-    topics: ['Food Sources', 'Types of Houses', 'Weather', 'Clothing'],
-  },
-  {
-    id: 'travel-culture',
-    title: 'Travel & Culture',
-    subtitle: 'Transport & Communication',
-    emoji: '✈️',
-    color: 'blue',
-    gradientFrom: 'from-blue-400',
-    gradientTo: 'to-indigo-500',
-    description: 'Explore transport & communication',
-    topics: ['Transport Types', 'Communication', 'Directions', 'Places'],
-  },
-];
-
-const EVSExplorer: React.FC<EVSExplorerProps> = ({
-  initialCategory = 'my-life',
-  initialLevel = 1,
-  autoStart = false,
-}) => {
+const TransportTrack: React.FC = () => {
   const {
     startGame,
     selectAnswer,
@@ -89,6 +18,7 @@ const EVSExplorer: React.FC<EVSExplorerProps> = ({
     resetGame,
     retryLevel,
     gameCompleted,
+    levelCompleted,
     passedLevel,
     currentLevel,
     currentQuestion,
@@ -103,29 +33,16 @@ const EVSExplorer: React.FC<EVSExplorerProps> = ({
     correctAnswers,
     getTelemetryLog,
     getAccuracy,
-  } = useEVSExplorerStore();
+  } = useTransportTrackStore();
 
-  const [view, setView] = useState<'categories' | 'playing' | 'completed'>(autoStart ? 'playing' : 'categories');
-  const [selectedCategory, setSelectedCategory] = useState<EVSCategoryType>(initialCategory);
+  const [gameState, setGameState] = useState<'menu' | 'playing' | 'completed'>('menu');
   const [textInput, setTextInput] = useState('');
-  const [autoInitDone, setAutoInitDone] = useState(false);
-
-  // Auto start when launched from subject selector CTA so users don't see the same start screen twice
-  React.useEffect(() => {
-    if (!autoStart || autoInitDone) return;
-    setSelectedCategory(initialCategory);
-    startGame(initialCategory as EVSGameType, initialLevel);
-    setView('playing');
-    setTextInput('');
-    setAutoInitDone(true);
-  }, [autoStart, autoInitDone, initialCategory, initialLevel, startGame]);
 
   const getDifficultyLabel = (level: number): string => {
     switch (level) {
       case 1: return '🟢 Easy';
       case 2: return '🟡 Medium';
       case 3: return '🔴 Hard';
-      case 4: return '🏆 Adventure';
       default: return '🟢 Easy';
     }
   };
@@ -135,28 +52,49 @@ const EVSExplorer: React.FC<EVSExplorerProps> = ({
       case 1: return 'from-green-400 to-emerald-500';
       case 2: return 'from-yellow-400 to-orange-500';
       case 3: return 'from-orange-500 to-red-500';
-      case 4: return 'from-purple-500 to-pink-500';
       default: return 'from-green-400 to-emerald-500';
     }
   };
 
-  const handleStartCategory = (categoryId: EVSCategoryType, level: number) => {
-    setSelectedCategory(categoryId);
-    startGame(categoryId as EVSGameType, level);
-    setView('playing');
+  const getVehicleEmoji = (vehicle: string) => {
+    const lower = vehicle.toLowerCase();
+    if (lower.includes('car') || lower.includes('bus') || lower.includes('truck')) return '🚗';
+    if (lower.includes('bicycle') || lower.includes('bike')) return '🚲';
+    if (lower.includes('train') || lower.includes('rail')) return '🚂';
+    if (lower.includes('ship') || lower.includes('boat') || lower.includes('ferry')) return '🚢';
+    if (lower.includes('airplane') || lower.includes('plane')) return '✈️';
+    if (lower.includes('helicopter')) return '🚁';
+    if (lower.includes('submarine')) return '⚓';
+    if (lower.includes('tractor')) return '🚜';
+    if (lower.includes('auto')) return '🛺';
+    return '🚗';
+  };
+
+  const getCategoryIcon = (category: string) => {
+    switch (category.toLowerCase()) {
+      case 'land': return <Car size={20} />;
+      case 'water': return <Ship size={20} />;
+      case 'air': return <Plane size={20} />;
+      default: return <Anchor size={20} />;
+    }
+  };
+
+  const handleStartGame = (level: number) => {
+    startGame(6, level);
+    setGameState('playing');
     setTextInput('');
   };
 
   const handleReset = () => {
     resetGame();
-    setView('categories');
+    setGameState('menu');
     setTextInput('');
   };
 
   const handleContinue = () => {
-    if (currentLevel < 4) {
-      startGame(selectedCategory as EVSGameType, currentLevel + 1);
-      setView('playing');
+    if (currentLevel < 3) {
+      startGame(6, currentLevel + 1);
+      setGameState('playing');
       setTextInput('');
     } else {
       handleReset();
@@ -165,7 +103,7 @@ const EVSExplorer: React.FC<EVSExplorerProps> = ({
 
   const handleRetry = () => {
     retryLevel();
-    setView('playing');
+    setGameState('playing');
     setTextInput('');
   };
 
@@ -180,78 +118,81 @@ const EVSExplorer: React.FC<EVSExplorerProps> = ({
     }
   };
 
-  React.useEffect(() => {
-    if (gameCompleted && view === 'playing') {
+  // Submit telemetry on completion
+  useEffect(() => {
+    if (gameCompleted && gameState === 'playing') {
       const telemetryLog = getTelemetryLog();
       submitTelemetry(telemetryLog);
-      setView('completed');
+      setGameState('completed');
     }
-  }, [gameCompleted, view, getTelemetryLog]);
+  }, [gameCompleted, gameState, getTelemetryLog]);
 
-  // Categories Menu
-  if (view === 'categories') {
-    const category = evsCategories.find(c => c.id === selectedCategory);
-    
+  // Menu Screen
+  if (gameState === 'menu') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-teal-600 via-emerald-600 to-cyan-500 p-8">
-        <div className="max-w-6xl mx-auto">
+      <div className="min-h-screen bg-gradient-to-br from-purple-600 via-indigo-600 to-blue-500 p-8">
+        <div className="max-w-4xl mx-auto">
           {/* Header */}
           <div className="text-center mb-12">
-            <div className="text-6xl mb-4">🌍</div>
-            <h1 className="text-5xl font-bold text-white mb-4">EVS World</h1>
+            <div className="text-6xl mb-4">🚗</div>
+            <h1 className="text-5xl font-bold text-white mb-4">Transport Track</h1>
             <p className="text-xl text-gray-100">
-              Discover My World & Nature! 🌿
+              Sort Vehicles & Compare Speed! 🚦
             </p>
           </div>
 
-          {/* Categories Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            {evsCategories.map((cat) => (
+          {/* Instructions */}
+          <div className="bg-white/20 backdrop-blur-sm rounded-xl p-6 mb-8">
+            <h2 className="text-2xl font-bold text-white mb-4">📖 What You'll Learn</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-100">
+              <div className="flex items-start gap-3">
+                <span className="text-2xl">🚗</span>
+                <p>Identify Land vehicles: Car, Bus, Train, Bicycle</p>
+              </div>
+              <div className="flex items-start gap-3">
+                <span className="text-2xl">🚢</span>
+                <p>Identify Water vehicles: Ship, Boat, Submarine</p>
+              </div>
+              <div className="flex items-start gap-3">
+                <span className="text-2xl">✈️</span>
+                <p>Identify Air vehicles: Airplane, Helicopter</p>
+              </div>
+              <div className="flex items-start gap-3">
+                <span className="text-2xl">⚡</span>
+                <p>Compare fastest and slowest transport</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Level Selection */}
+          <h2 className="text-2xl font-bold text-white mb-6 text-center">🎮 Choose Level</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            {[
+              { level: 1, icon: '🚲', color: 'green', desc: 'Basic vehicle types' },
+              { level: 2, icon: '🚦', color: 'yellow', desc: 'Classification & comparison' },
+              { level: 3, icon: '🏆', color: 'red', desc: 'Advanced concepts' },
+            ].map((level) => (
               <button
-                key={cat.id}
-                onClick={() => handleStartCategory(cat.id, 1)}
-                className="bg-white rounded-xl shadow-2xl overflow-hidden hover:scale-105 transition-all text-left w-full"
+                key={level.level}
+                onClick={() => handleStartGame(level.level)}
+                className={`bg-white rounded-xl shadow-2xl overflow-hidden hover:scale-105 transition-all text-left w-full`}
               >
-                <div className={`bg-gradient-to-r ${cat.gradientFrom} ${cat.gradientTo} p-6 text-white`}>
+                <div className={`bg-gradient-to-r from-${level.color}-400 to-${level.color}-500 p-6 text-white`}>
                   <div className="flex items-center gap-3 mb-2">
-                    <span className="text-4xl">{cat.emoji}</span>
-                    <h2 className="text-xl font-bold">{cat.title}</h2>
+                    <span className="text-4xl">{level.icon}</span>
+                    <h2 className="text-2xl font-bold">Level {level.level}</h2>
                   </div>
-                  <p className="text-sm opacity-90">{cat.subtitle}</p>
+                  <p className="text-sm opacity-90">{level.desc}</p>
                 </div>
                 <div className="p-6">
-                  <p className="text-gray-600 mb-3">{cat.description}</p>
-                  <div className="flex flex-wrap gap-1 mb-4">
-                    {cat.topics.map((topic) => (
-                      <span key={topic} className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">
-                        {topic}
-                      </span>
-                    ))}
-                  </div>
-                  <div className="w-full bg-gradient-to-r from-green-400 to-emerald-500 text-white font-bold py-3 rounded-lg text-center">
-                    🟢 Level 1: Easy
+                  <p className="text-gray-600 mb-4">10 questions to complete</p>
+                  <p className="text-sm text-gray-500 mb-4">Pass: ≥80% accuracy</p>
+                  <div className={`w-full bg-gradient-to-r from-${level.color}-500 to-${level.color}-600 text-white font-bold py-3 rounded-lg text-center`}>
+                    Start →
                   </div>
                 </div>
               </button>
             ))}
-          </div>
-
-          {/* Adventure Mode */}
-          <div className="bg-gradient-to-br from-purple-500 via-pink-500 to-red-500 rounded-xl shadow-2xl overflow-hidden mb-8">
-            <div className="p-8 text-white text-center">
-              <div className="flex justify-center mb-4">
-                <Mountain size={64} className="text-yellow-300" />
-              </div>
-              <h2 className="text-3xl font-bold mb-2">🏆 Grand EVS Adventure</h2>
-              <p className="text-lg opacity-90 mb-4">Questions from ALL EVS topics!</p>
-              <p className="text-sm opacity-75 mb-4">Test everything you learned across all categories</p>
-              <button
-                onClick={() => handleStartCategory('my-life', 4)}
-                className="bg-white text-purple-600 font-bold py-3 px-8 rounded-full hover:bg-gray-100 transition-colors"
-              >
-                🚀 Start Adventure (Level 4)
-              </button>
-            </div>
           </div>
 
           {/* Back Button */}
@@ -268,29 +209,26 @@ const EVSExplorer: React.FC<EVSExplorerProps> = ({
   }
 
   // Playing Screen
-  const progressPercent = (totalAnswered / 15) * 100;
+  const progressPercent = (totalAnswered / 10) * 100;
   const isCorrect = currentQuestion && selectedAnswer && 
     selectedAnswer.toLowerCase().trim() === 
     (Array.isArray(currentQuestion.correctAnswer) 
       ? currentQuestion.correctAnswer[0].toLowerCase().trim()
       : currentQuestion.correctAnswer.toLowerCase().trim());
 
-  const category = evsCategories.find(c => c.id === selectedCategory);
-
   return (
-    <div className="min-h-screen bg-gradient-to-b from-teal-50 to-emerald-100 p-8">
+    <div className="min-h-screen bg-gradient-to-b from-purple-50 to-blue-100 p-8">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="mb-6">
           <button
-            onClick={() => setView('categories')}
+            onClick={() => setGameState('menu')}
             className="text-gray-600 hover:text-gray-800 mb-2 flex items-center gap-1"
           >
-            ← Back to Categories
+            ← Back to Menu
           </button>
           <h1 className="text-3xl font-bold text-gray-800 mb-2 flex items-center gap-2">
-            <span className="text-2xl">{category?.emoji}</span>
-            {category?.title}
+            🚗 Transport Track
           </h1>
           <p className="text-lg text-gray-600">
             Level {currentLevel} | {getDifficultyLabel(currentLevel)}
@@ -301,11 +239,11 @@ const EVSExplorer: React.FC<EVSExplorerProps> = ({
         <div className="bg-white rounded-lg shadow-lg p-4 mb-6">
           <div className="flex justify-between items-center mb-2">
             <span className="text-gray-600">Progress</span>
-            <span className="text-gray-600">{totalAnswered} / 15</span>
+            <span className="text-gray-600">{totalAnswered} / 10</span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-4">
             <div
-              className="bg-gradient-to-r from-teal-400 to-emerald-500 h-4 rounded-full transition-all duration-500"
+              className="bg-gradient-to-r from-purple-400 to-blue-500 h-4 rounded-full transition-all duration-500"
               style={{ width: `${progressPercent}%` }}
             ></div>
           </div>
@@ -364,22 +302,16 @@ const EVSExplorer: React.FC<EVSExplorerProps> = ({
               <div className="flex flex-wrap gap-2 mb-4">
                 <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r ${getDifficultyColor(currentLevel)} text-white`}>
                   <Star size={16} />
-                  <span className="font-semibold">{currentQuestion.chapter}</span>
-                </div>
-                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-100 text-emerald-700">
-                  <span className="font-semibold">{currentQuestion.points} pts</span>
-                </div>
-                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-purple-100 text-purple-700">
                   <span className="font-semibold">{currentQuestion.topic}</span>
+                </div>
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-100 text-blue-700">
+                  <span className="font-semibold">{currentQuestion.points} pts</span>
                 </div>
               </div>
 
               {/* Question Text */}
               <div className="bg-gradient-to-b from-gray-50 to-gray-100 rounded-lg p-6 border border-gray-200 mb-4">
                 <h2 className="text-xl font-bold text-gray-800 mb-2">{currentQuestion.question}</h2>
-                {currentQuestion.questionHindi && (
-                  <p className="text-lg text-gray-600 mt-2">{currentQuestion.questionHindi}</p>
-                )}
                 {hintUsed && !answered && (
                   <p className="text-yellow-700 mt-3 text-sm">
                     💡 Hint: {currentQuestion.hint}
@@ -387,7 +319,7 @@ const EVSExplorer: React.FC<EVSExplorerProps> = ({
                 )}
               </div>
 
-              {/* Options */}
+              {/* MCQ Options */}
               {currentQuestion.type === 'mcq' && currentQuestion.options && (
                 <div className="space-y-3">
                   {currentQuestion.options.map((option, idx) => {
@@ -407,14 +339,15 @@ const EVSExplorer: React.FC<EVSExplorerProps> = ({
                             : showWrong 
                               ? 'bg-red-50 border-red-500'
                               : isSelected 
-                                ? 'bg-teal-50 border-teal-500'
-                                : 'bg-white border-gray-200 hover:border-teal-300'
+                                ? 'bg-purple-50 border-purple-500'
+                                : 'bg-white border-gray-200 hover:border-purple-300'
                         }`}
                       >
+                        <span className="text-2xl">{getVehicleEmoji(option)}</span>
                         <span className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${
                           showCorrect ? 'bg-green-500 text-white' :
                           showWrong ? 'bg-red-500 text-white' :
-                          isSelected ? 'bg-teal-500 text-white' :
+                          isSelected ? 'bg-purple-500 text-white' :
                           'bg-gray-200 text-gray-700'
                         }`}>
                           {showCorrect ? '✓' : showWrong ? '✗' : String.fromCharCode(65 + idx)}
@@ -427,7 +360,7 @@ const EVSExplorer: React.FC<EVSExplorerProps> = ({
               )}
 
               {/* Fill in the blank */}
-              {(currentQuestion.type === 'fill_blank' || currentQuestion.type === 'true_false' || currentQuestion.type === 'sequence') && (
+              {currentQuestion.type === 'fill_blank' && (
                 <div>
                   <input
                     type="text"
@@ -436,26 +369,41 @@ const EVSExplorer: React.FC<EVSExplorerProps> = ({
                     onKeyDown={(e) => e.key === 'Enter' && handleTextSubmit()}
                     disabled={answered}
                     placeholder="Type your answer..."
-                    className="w-full p-4 text-lg border-2 border-gray-300 rounded-lg focus:border-teal-500 focus:outline-none"
+                    className="w-full p-4 text-lg border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none"
                     maxLength={100}
                   />
                   {!answered && (
                     <button
                       onClick={handleTextSubmit}
                       disabled={!textInput.trim()}
-                      className="mt-3 w-full bg-teal-600 hover:bg-teal-700 disabled:bg-gray-300 text-white font-bold py-3 rounded-lg transition-colors"
+                      className="mt-3 w-full bg-purple-600 hover:bg-purple-700 disabled:bg-gray-300 text-white font-bold py-3 rounded-lg transition-colors"
                     >
                       Submit Answer
                     </button>
                   )}
-                  {answered && (
-                    <div className={`mt-4 p-4 rounded-lg ${isCorrect ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'} border`}>
-                      <p className="font-semibold mb-2">
-                        {isCorrect ? '✅ Correct!' : '❌ Incorrect'}
-                      </p>
-                      <p>Answer: {Array.isArray(currentQuestion.correctAnswer) ? currentQuestion.correctAnswer[0] : currentQuestion.correctAnswer}</p>
-                    </div>
-                  )}
+                </div>
+              )}
+
+              {/* Classification */}
+              {currentQuestion.type === 'classification' && (
+                <div className="grid grid-cols-3 gap-3 mb-4">
+                  {['Land', 'Water', 'Air'].map((category) => (
+                    <button
+                      key={category}
+                      onClick={() => handleOptionClick(category)}
+                      disabled={answered}
+                      className={`p-4 rounded-lg border-2 transition-all ${
+                        selectedAnswer === category
+                          ? 'bg-purple-50 border-purple-500'
+                          : 'bg-white border-gray-200 hover:border-purple-300'
+                      }`}
+                    >
+                      <span className="text-2xl block text-center mb-2">
+                        {category === 'Land' ? '🚗' : category === 'Water' ? '🚢' : '✈️'}
+                      </span>
+                      <span className="font-semibold text-center block">{category}</span>
+                    </button>
+                  ))}
                 </div>
               )}
 
@@ -470,7 +418,7 @@ const EVSExplorer: React.FC<EVSExplorerProps> = ({
                   </div>
                   <button
                     onClick={nextQuestion}
-                    className="w-full bg-gradient-to-r from-teal-500 to-emerald-600 hover:from-teal-600 hover:to-emerald-700 text-white font-bold py-4 rounded-lg transition-all transform hover:scale-105 shadow-lg flex items-center justify-center gap-2"
+                    className="w-full bg-gradient-to-r from-purple-500 to-blue-600 hover:from-purple-600 hover:to-blue-700 text-white font-bold py-4 rounded-lg transition-all transform hover:scale-105 shadow-lg flex items-center justify-center gap-2"
                   >
                     Next Question
                     <ArrowRight size={20} />
@@ -482,8 +430,8 @@ const EVSExplorer: React.FC<EVSExplorerProps> = ({
         </div>
 
         {/* Completion Screen */}
-        {view === 'completed' && (
-          <div className="bg-white rounded-lg shadow-lg p-8 border-2 border-teal-500">
+        {gameState === 'completed' && (
+          <div className="bg-white rounded-lg shadow-lg p-8 border-2 border-purple-500">
             {/* Pass/Fail Header */}
             <div className="flex items-center gap-4 mb-6">
               {passedLevel ? (
@@ -528,19 +476,19 @@ const EVSExplorer: React.FC<EVSExplorerProps> = ({
                 <p className="text-gray-600 text-sm">Best Streak</p>
                 <p className="text-3xl font-bold text-blue-600">{bestStreak}</p>
               </div>
-              <div className="bg-teal-50 p-4 rounded-lg text-center">
+              <div className="bg-purple-50 p-4 rounded-lg text-center">
                 <p className="text-gray-600 text-sm">Correct/Total</p>
-                <p className="text-3xl font-bold text-teal-600">{correctAnswers}/15</p>
+                <p className="text-3xl font-bold text-purple-600">{correctAnswers}/10</p>
               </div>
             </div>
 
             {/* Action Buttons */}
             <div className="flex gap-4 flex-wrap">
               {passedLevel ? (
-                currentLevel < 4 ? (
+                currentLevel < 3 ? (
                   <button
                     onClick={handleContinue}
-                    className="flex-1 bg-gradient-to-r from-teal-500 to-emerald-600 hover:from-teal-600 hover:to-emerald-700 text-white font-bold py-3 rounded-lg transition-colors flex items-center justify-center gap-2"
+                    className="flex-1 bg-gradient-to-r from-purple-500 to-blue-600 hover:from-purple-600 hover:to-blue-700 text-white font-bold py-3 rounded-lg transition-colors flex items-center justify-center gap-2"
                   >
                     Next Level <ChevronRight size={20} />
                   </button>
@@ -563,7 +511,7 @@ const EVSExplorer: React.FC<EVSExplorerProps> = ({
               
               <button
                 onClick={handleReset}
-                className={`${passedLevel && currentLevel < 4 ? 'flex-1' : 'w-full'} bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 rounded-lg transition-colors`}
+                className={`${passedLevel && currentLevel < 3 ? 'flex-1' : 'w-full'} bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 rounded-lg transition-colors`}
               >
                 Back to Menu
               </button>
@@ -575,5 +523,5 @@ const EVSExplorer: React.FC<EVSExplorerProps> = ({
   );
 };
 
-export default EVSExplorer;
+export default TransportTrack;
 

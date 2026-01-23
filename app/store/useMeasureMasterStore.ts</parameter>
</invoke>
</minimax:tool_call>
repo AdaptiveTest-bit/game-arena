@@ -1,0 +1,402 @@
+ter name="content">
+import { create } from 'zustand';
+
+export type DifficultyLevel = 'easy' | 'medium' | 'hard';
+
+export interface MeasureMasterQuestion {
+  id: string;
+  question: string;
+  type: 'mcq' | 'fill_blank' | 'matching' | 'true_false';
+  options?: string[];
+  correctAnswer: string | string[];
+  hint: string;
+  explanation: string;
+  topic: string;
+  difficulty: DifficultyLevel;
+  points: number;
+}
+
+export interface MeasureMasterGameState {
+  currentChapter: number;
+  currentLevel: number;
+  questions: MeasureMasterQuestion[];
+  currentQuestionIndex: number;
+  currentQuestion: MeasureMasterQuestion | null;
+  selectedAnswer: string | null;
+  answered: boolean;
+  showFeedback: boolean;
+  streak: number;
+  bestStreak: number;
+  hintUsed: boolean;
+  gameStarted: boolean;
+  gameCompleted: boolean;
+  levelCompleted: boolean;
+  passedLevel: boolean;
+  score: number;
+  totalAnswered: number;
+  correctAnswers: number;
+  
+  startGame: (chapter: number, level: number) => void;
+  selectAnswer: (answer: string) => boolean;
+  useHint: () => void;
+  nextQuestion: () => void;
+  resetGame: () => void;
+  retryLevel: () => void;
+  getAccuracy: () => number;
+  getTelemetryLog: () => Record<string, unknown>;
+}
+
+// Question data for Chapter 6: Measurement
+const questionsData: Record<DifficultyLevel, MeasureMasterQuestion[]> = {
+  easy: [
+    {
+      id: 'meas_1_1',
+      question: "Which unit measures LENGTH?",
+      type: 'mcq',
+      options: ["Kilogram", "Liter", "Meter", "Hour"],
+      correctAnswer: "Meter",
+      hint: 'Think about measuring how long something is',
+      explanation: 'Meter is used to measure length.',
+      topic: 'Length Units',
+      difficulty: 'easy',
+      points: 10,
+    },
+    {
+      id: 'meas_1_2',
+      question: "Which unit measures WEIGHT?",
+      type: 'mcq',
+      options: ["Meter", "Kilogram", "Liter", "Second"],
+      correctAnswer: "Kilogram",
+      hint: 'Think about measuring how heavy something is',
+      explanation: 'Kilogram (kg) measures weight.',
+      topic: 'Weight Units',
+      difficulty: 'easy',
+      points: 10,
+    },
+    {
+      id: 'meas_1_3',
+      question: "Which unit measures CAPACITY?",
+      type: 'mcq',
+      options: ["Meter", "Kilogram", "Liter", "Gram"],
+      correctAnswer: "Liter",
+      hint: 'Think about measuring liquids',
+      explanation: 'Liter is used to measure liquids.',
+      topic: 'Capacity Units',
+      difficulty: 'easy',
+      points: 10,
+    },
+    {
+      id: 'meas_1_4',
+      question: "What unit to measure your HEIGHT?",
+      type: 'mcq',
+      options: ["Kilogram", "Meter", "Liter", "Gram"],
+      correctAnswer: "Meter",
+      hint: 'Height is how tall you are',
+      explanation: 'We measure height in meters or centimeters.',
+      topic: 'Length',
+      difficulty: 'easy',
+      points: 10,
+    },
+    {
+      id: 'meas_1_5',
+      question: "What unit to measure a glass of water?",
+      type: 'mcq',
+      options: ["Meter", "Kilogram", "Liter", "Gram"],
+      correctAnswer: "Liter",
+      hint: 'Water is a liquid',
+      explanation: 'We measure water in milliliters or liters.',
+      topic: 'Capacity',
+      difficulty: 'easy',
+      points: 10,
+    },
+    {
+      id: 'meas_1_6',
+      question: "What unit to measure a watermelon?",
+      type: 'mcq',
+      options: ["Meter", "Kilogram", "Liter", "Centimeter"],
+      correctAnswer: "Kilogram",
+      hint: 'Think about weight',
+      explanation: 'We weigh fruits in kilograms.',
+      topic: 'Weight',
+      difficulty: 'easy',
+      points: 10,
+    },
+  ],
+  medium: [
+    {
+      id: 'meas_m1_1',
+      question: "1 meter = ? centimeters",
+      type: 'mcq',
+      options: ["10", "100", "100", "1000"],
+      correctAnswer: "100",
+      hint: 'Meter divided into 100 parts',
+      explanation: '1 meter = 100 centimeters.',
+      topic: 'Length Conversion',
+      difficulty: 'medium',
+      points: 15,
+    },
+    {
+      id: 'meas_m1_2',
+      question: "1 kilogram = ? grams",
+      type: 'mcq',
+      options: ["100", "500", "1000", "10000"],
+      correctAnswer: "1000",
+      hint: 'Kilo means 1000',
+      explanation: '1 kilogram = 1000 grams.',
+      topic: 'Weight Conversion',
+      difficulty: 'medium',
+      points: 15,
+    },
+    {
+      id: 'meas_m1_3',
+      question: "1 liter = ? milliliters",
+      type: 'mcq',
+      options: ["100", "500", "1000", "10000"],
+      correctAnswer: "1000",
+      hint: 'Think about small units',
+      explanation: '1 liter = 1000 milliliters.',
+      topic: 'Capacity Conversion',
+      difficulty: 'medium',
+      points: 15,
+    },
+    {
+      id: 'meas_m1_4',
+      question: "What is longer: 1 meter or 50 centimeters?",
+      type: 'mcq',
+      options: ["1 meter", "50 centimeters", "Both same", "Cannot tell"],
+      correctAnswer: "1 meter",
+      hint: 'Compare: 1m = 100cm',
+      explanation: '1 meter = 100cm, which is more than 50cm.',
+      topic: 'Comparison',
+      difficulty: 'medium',
+      points: 15,
+    },
+  ],
+  hard: [
+    {
+      id: 'meas_h1_1',
+      question: "Which tool measures length?",
+      type: 'mcq',
+      options: ["Weighing scale", "Ruler", "Measuring jar", "Thermometer"],
+      correctAnswer: "Ruler",
+      hint: 'Think about measuring straight lines',
+      explanation: 'Rulers measure length in cm/meters.',
+      topic: 'Tools',
+      difficulty: 'hard',
+      points: 20,
+    },
+    {
+      id: 'meas_h1_2',
+      question: "Which tool measures weight?",
+      type: 'mcq',
+      options: ["Ruler", "Weighing scale", "Measuring tape", "Clock"],
+      correctAnswer: "Weighing scale",
+      hint: 'Think about measuring heaviness',
+      explanation: 'Weighing scales measure weight in kg.',
+      topic: 'Tools',
+      difficulty: 'hard',
+      points: 20,
+    },
+    {
+      id: 'meas_h1_3',
+      question: "Which tool measures capacity?",
+      type: 'mcq',
+      options: ["Ruler", "Weighing scale", "Measuring jar", "Thermometer"],
+      correctAnswer: "Measuring jar",
+      hint: 'Think about measuring liquids',
+      explanation: 'Measuring jars measure capacity in ml/L.',
+      topic: 'Tools',
+      difficulty: 'hard',
+      points: 20,
+    },
+  ],
+};
+
+const getDifficulty = (level: number): DifficultyLevel => {
+  switch (level) {
+    case 1: return 'easy';
+    case 2: return 'medium';
+    case 3: return 'hard';
+    default: return 'easy';
+  }
+};
+
+const generateQuestionSet = (chapter: number, level: number): MeasureMasterQuestion[] => {
+  const difficulty = getDifficulty(level);
+  const questions = [...(questionsData[difficulty] || [])];
+  return questions.sort(() => Math.random() - 0.5).slice(0, 10);
+};
+
+export const useMeasureMasterStore = create<MeasureMasterGameState>((set, get) => ({
+  currentChapter: 6,
+  currentLevel: 1,
+  questions: [],
+  currentQuestionIndex: 0,
+  currentQuestion: null,
+  selectedAnswer: null,
+  answered: false,
+  showFeedback: false,
+  streak: 0,
+  bestStreak: 0,
+  hintUsed: false,
+  gameStarted: false,
+  gameCompleted: false,
+  levelCompleted: false,
+  passedLevel: false,
+  score: 0,
+  totalAnswered: 0,
+  correctAnswers: 0,
+
+  startGame: (chapter: number, level: number) => {
+    const questionSet = generateQuestionSet(chapter, level);
+    const firstQuestion = questionSet[0];
+    
+    set({
+      currentChapter: chapter,
+      currentLevel: level,
+      questions: questionSet,
+      currentQuestionIndex: 0,
+      currentQuestion: firstQuestion,
+      selectedAnswer: null,
+      answered: false,
+      showFeedback: false,
+      streak: 0,
+      bestStreak: 0,
+      hintUsed: false,
+      gameStarted: true,
+      gameCompleted: false,
+      levelCompleted: false,
+      passedLevel: false,
+      score: 0,
+      totalAnswered: 0,
+      correctAnswers: 0,
+    });
+  },
+
+  selectAnswer: (answer: string) => {
+    const state = get();
+    if (state.answered || !state.currentQuestion) return false;
+    
+    const isCorrect = answer.toLowerCase().trim() === 
+      (Array.isArray(state.currentQuestion.correctAnswer) 
+        ? state.currentQuestion.correctAnswer[0].toLowerCase().trim()
+        : state.currentQuestion.correctAnswer.toLowerCase().trim());
+    
+    const newStreak = isCorrect ? state.streak + 1 : 0;
+    const bonusPoints = Math.min(newStreak * 2, 10);
+    const questionPoints = state.currentQuestion.points + bonusPoints;
+    
+    set({
+      selectedAnswer: answer,
+      answered: true,
+      showFeedback: true,
+      totalAnswered: state.totalAnswered + 1,
+      correctAnswers: isCorrect ? state.correctAnswers + 1 : state.correctAnswers,
+      score: isCorrect ? state.score + questionPoints : state.score,
+      streak: newStreak,
+      bestStreak: Math.max(state.bestStreak, newStreak),
+    });
+    
+    return isCorrect;
+  },
+
+  useHint: () => {
+    const state = get();
+    if (state.hintUsed || !state.currentQuestion || state.answered) return;
+    
+    set({
+      hintUsed: true,
+      score: Math.max(0, state.score - 5),
+    });
+  },
+
+  nextQuestion: () => {
+    const state = get();
+    const nextIndex = state.currentQuestionIndex + 1;
+    
+    if (nextIndex >= state.questions.length) {
+      const accuracy = state.totalAnswered > 0 ? state.correctAnswers / state.totalAnswered : 0;
+      const passed = accuracy >= 0.8;
+      set({
+        gameCompleted: true,
+        levelCompleted: true,
+        passedLevel: passed,
+      });
+    } else {
+      const nextQuestion = state.questions[nextIndex];
+      set({
+        currentQuestionIndex: nextIndex,
+        currentQuestion: nextQuestion,
+        selectedAnswer: null,
+        answered: false,
+        showFeedback: false,
+        hintUsed: false,
+      });
+    }
+  },
+
+  resetGame: () => {
+    set({
+      gameStarted: false,
+      gameCompleted: false,
+      levelCompleted: false,
+      passedLevel: false,
+      currentLevel: 1,
+      score: 0,
+      currentQuestion: null,
+      selectedAnswer: null,
+      answered: false,
+      showFeedback: false,
+      totalAnswered: 0,
+      correctAnswers: 0,
+      questions: [],
+      streak: 0,
+      bestStreak: 0,
+      hintUsed: false,
+    });
+  },
+
+  retryLevel: () => {
+    const state = get();
+    const questionSet = generateQuestionSet(state.currentChapter, state.currentLevel);
+    const firstQuestion = questionSet[0];
+    
+    set({
+      gameStarted: true,
+      gameCompleted: false,
+      levelCompleted: false,
+      passedLevel: false,
+      score: 0,
+      currentQuestion: firstQuestion,
+      questions: questionSet,
+      currentQuestionIndex: 0,
+      selectedAnswer: null,
+      answered: false,
+      showFeedback: false,
+      totalAnswered: 0,
+      correctAnswers: 0,
+      streak: 0,
+      hintUsed: false,
+    });
+  },
+
+  getAccuracy: () => {
+    const state = get();
+    if (state.totalAnswered === 0) return 1;
+    return state.correctAnswers / state.totalAnswered;
+  },
+
+  getTelemetryLog: () => {
+    const state = get();
+    return {
+      chapter: state.currentChapter,
+      level: state.currentLevel,
+      score: state.score,
+      accuracy: state.getAccuracy(),
+      totalQuestions: state.totalAnswered,
+      passed: state.passedLevel,
+      bestStreak: state.bestStreak,
+      timestamp: new Date().toISOString(),
+    };
+  },
+}));
