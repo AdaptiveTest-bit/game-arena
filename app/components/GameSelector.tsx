@@ -19,6 +19,7 @@ import VocabularyBuilder from './games/class3/VocabularyBuilder';
 import GrammarLogic from './games/class3/GrammarLogic';
 import ThinkAndTell from './games/class3/ThinkAndTell';
 import MoralMapper from './games/class3/MoralMapper';
+import EVSExplorer from './games/class3/EVSExplorer';
 import { RotateCcw } from 'lucide-react';
 
 // Game data structure with class and subject information
@@ -56,7 +57,11 @@ type GameType =
   | 'vocabulary-builder'
   | 'grammar-logic'
   | 'think-and-tell'
-  | 'moral-mapper';
+  | 'moral-mapper'
+  | 'my-life'
+  | 'nature-quest'
+  | 'food-home'
+  | 'travel-culture';
 
 type SubjectType = 
   | 'english'
@@ -73,6 +78,64 @@ const subjectOptions: { id: SubjectType; label: string; emoji: string; color: st
 
 // All games data - organized by chapter and subject
 const allGames: GameData[] = [
+  // ==================== EVS GAMES ====================
+  {
+    id: 'my-life',
+    title: 'My Life Explorer',
+    subtitle: 'Family & Daily Life',
+    emoji: '👨‍👩‍👧‍👦',
+    gradientFrom: 'from-pink-400',
+    gradientTo: 'to-rose-500',
+    concept: 'Family members, daily routine, feelings, community helpers',
+    problem: 'Learn about family, friends, and daily life',
+    badge: '🟢 Easy → 🏆 Master (4 levels)',
+    btnText: '👨‍👩‍👧‍👦 Start Exploring →',
+    subjects: ['evs'],
+    chapter: 'My Life',
+  },
+  {
+    id: 'nature-quest',
+    title: 'Nature Quest',
+    subtitle: 'Plants & Animals',
+    emoji: '🌿',
+    gradientFrom: 'from-green-400',
+    gradientTo: 'to-emerald-500',
+    concept: 'Plants, animals, water cycle, food chains, environment',
+    problem: 'Discover the amazing world of nature',
+    badge: '🟢 Easy → 🏆 Master (4 levels)',
+    btnText: '🌿 Start Quest →',
+    subjects: ['evs'],
+    chapter: 'Nature',
+  },
+  {
+    id: 'food-home',
+    title: 'Food & Home World',
+    subtitle: 'Food & Shelter',
+    emoji: '🏠',
+    gradientFrom: 'from-orange-400',
+    gradientTo: 'to-amber-500',
+    concept: 'Food sources, types of houses, weather, clothing',
+    problem: 'Learn about food, homes, and weather',
+    badge: '🟢 Easy → 🏆 Master (4 levels)',
+    btnText: '🏠 Start Journey →',
+    subjects: ['evs'],
+    chapter: 'Food & Home',
+  },
+  {
+    id: 'travel-culture',
+    title: 'Travel & Culture',
+    subtitle: 'Transport & Communication',
+    emoji: '✈️',
+    gradientFrom: 'from-blue-400',
+    gradientTo: 'to-indigo-500',
+    concept: 'Types of transport, communication, directions, places',
+    problem: 'Explore transport and communication',
+    badge: '🟢 Easy → 🏆 Master (4 levels)',
+    btnText: '✈️ Start Adventure →',
+    subjects: ['evs'],
+    chapter: 'Travel',
+  },
+
   // ==================== ENGLISH GAMES ====================
   {
     id: 'story-path-adventure',
@@ -474,6 +537,9 @@ const GameSelector: React.FC = () => {
         {currentGame === 'moral-mapper' && (
           <MoralMapper onExit={() => setCurrentGame('home')} />
         )}
+        {(currentGame === 'my-life' || currentGame === 'nature-quest' || currentGame === 'food-home' || currentGame === 'travel-culture') && (
+          <EVSExplorer />
+        )}
       </div>
     );
   }
@@ -580,7 +646,7 @@ const GameSelector: React.FC = () => {
             <div className="text-center p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl">
               <span className="text-4xl mb-2 block">🌍</span>
               <p className="font-bold text-gray-800">EVS</p>
-              <p className="text-sm text-gray-600">Coming Soon</p>
+              <p className="text-sm text-gray-600">1 game available</p>
             </div>
             <div className="text-center p-4 bg-gradient-to-br from-purple-50 to-violet-50 rounded-xl">
               <span className="text-4xl mb-2 block">🔬</span>
