@@ -169,8 +169,14 @@ export const useGameStore = create<GameState>((set, get) => {
       ? state.correctCuts / state.requiredCuts 
       : 0;
 
+    // Get student ID from auth context (in production, use actual auth)
+    // For now, fall back to test_user_1 if no auth
+    const studentId = (typeof window !== 'undefined' && (window as any).__NEXT_AUTH_SESSION__) 
+      ? (window as any).__NEXT_AUTH_SESSION__?.user?.studentId 
+      : 'test_user_1';
+
     return {
-      student_id: 'test_user_1',
+      student_id: studentId || 'test_user_1',
       game_id: 'rope_cutter_01',
       concept_tag: 'mixed_fraction_division',
       performance: {

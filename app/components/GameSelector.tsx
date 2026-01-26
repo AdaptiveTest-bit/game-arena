@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useSession } from 'next-auth/react';
 import RopeCutterGame from './games/RopeCutter';
 import LiquidLabGame from './games/LiquidLab';
 import FractionBridgeGame from './games/FractionBridge';
@@ -16,10 +17,12 @@ import ShapeCityGame from './games/ShapeCityGame';
 import WeightWarehouseGame from './games/WeightWarehouseGame';
 import ShadowStoryGame from './games/ShadowStoryGame';
 import { RotateCcw } from 'lucide-react';
+import { LogoutButton } from './auth/LogoutButton';
 
 type GameType = 'home' | 'rope-cutter' | 'liquid-lab' | 'fraction-bridge' | 'angle-architect' | 'symmetry-shield' | 'factor-factory' | 'cargo-captain' | 'pattern-detective' | 'ocean-empire' | 'treasure-map' | 'beach-safari' | 'shape-city' | 'weight-warehouse' | 'shadow-story';
 
 const GameSelector: React.FC = () => {
+  const { data: session } = useSession();
   const [currentGame, setCurrentGame] = useState<GameType>('home');
 
   if (currentGame !== 'home') {
@@ -57,6 +60,22 @@ const GameSelector: React.FC = () => {
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="text-center mb-16">
+          <div className="flex justify-between items-center mb-4">
+            <div></div>
+            {session?.user && (
+              <div className="flex items-center gap-4 bg-white/10 backdrop-blur-sm rounded-lg px-4 py-2">
+                {/* User Avatar */}
+                <div className="text-4xl bg-white rounded-full w-14 h-14 flex items-center justify-center shadow-lg">
+                  {(session.user as any).avatar || "😊"}
+                </div>
+                <div className="text-white text-right">
+                  <p className="font-semibold">{session.user.name}</p>
+                  <p className="text-sm opacity-75">Class {session.user.class}</p>
+                </div>
+                <LogoutButton />
+              </div>
+            )}
+          </div>
           <h1 className="text-5xl font-bold text-white mb-4">🎮 Game Arena</h1>
           <p className="text-xl text-gray-100">
             Master CBSE Class 5 Math Concepts Through Interactive Games
