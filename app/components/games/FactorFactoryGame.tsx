@@ -204,7 +204,7 @@ export default function FactorFactoryGame() {
                     <p className="text-slate-500 text-sm">No blueprints yet. Start dragging!</p>
                   ) : (
                     store.foundFactors.map((factor, idx) => (
-                      <div
+                      <motion.div
                         key={idx}
                         initial={{ opacity: 0, x: -10 }}
                         animate={{ opacity: 1, x: 0 }}
@@ -217,7 +217,7 @@ export default function FactorFactoryGame() {
                           </span>
                           <span className="text-slate-500">(= {factor.area})</span>
                         </div>
-                      </div>
+                      </motion.div>
                     ))
                   )}
                 </div>
@@ -225,7 +225,7 @@ export default function FactorFactoryGame() {
 
               {/* Action Buttons */}
               <div className="space-y-2">
-                <button
+                <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => {
@@ -239,9 +239,9 @@ export default function FactorFactoryGame() {
                 >
                   <Zap size={18} />
                   Add Blueprint
-                </button>
+                </motion.button>
 
-                <button
+                <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => {
@@ -251,7 +251,7 @@ export default function FactorFactoryGame() {
                 >
                   <RotateCcw size={18} />
                   Clear Selection
-                </button>
+                </motion.button>
               </div>
 
               {/* Hint */}
