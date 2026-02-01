@@ -17,9 +17,12 @@ import MeasureIslandGame from './games/MeasureIslandGame';
 import DataDetectiveGame from './games/DataDetectiveGame';
 import PatternParadeGame from './games/PatternParadeGame';
 import CoinKingdomGame from './games/CoinKingdomGame';
+import NumberSnakeGame from './games/NumberSnakeGame';
+import AdditionSnakeGame from './games/AdditionSnakeGame';
+import SubtractionSnakeGame from './games/SubtractionSnakeGame';
 import { RotateCcw } from 'lucide-react';
 
-type GameType = 'home' | 'rope-cutter' | 'liquid-lab' | 'fraction-bridge' | 'angle-architect' | 'symmetry-shield' | 'factor-factory' | 'cargo-captain' | 'shape-safari' | 'number-jungle' | 'balloon-blastoff' | 'bubble-pop' | 'tick-tock' | 'measure-island' | 'data-detective' | 'pattern-parade' | 'coin-kingdom';
+type GameType = 'home' | 'rope-cutter' | 'liquid-lab' | 'fraction-bridge' | 'angle-architect' | 'symmetry-shield' | 'factor-factory' | 'cargo-captain' | 'shape-safari' | 'number-jungle' | 'balloon-blastoff' | 'bubble-pop' | 'tick-tock' | 'measure-island' | 'data-detective' | 'pattern-parade' | 'coin-kingdom' | 'number-snake' | 'addition-snake' | 'subtraction-snake';
 
 type SubjectType = 'mathematics' | 'english' | 'evs' | 'hindi' | 'gk';
 
@@ -63,6 +66,9 @@ const GameSelector: React.FC = () => {
         {currentGame === 'data-detective' && <DataDetectiveGame />}
         {currentGame === 'pattern-parade' && <PatternParadeGame />}
         {currentGame === 'coin-kingdom' && <CoinKingdomGame />}
+        {currentGame === 'number-snake' && <NumberSnakeGame />}
+        {currentGame === 'addition-snake' && <AdditionSnakeGame />}
+        {currentGame === 'subtraction-snake' && <SubtractionSnakeGame />}
       </div>
     );
   }
@@ -800,6 +806,147 @@ const GameSelector: React.FC = () => {
                 </div>
 
                 <button className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold py-3 rounded-lg transition-colors">
+                  Play Game →
+                </button>
+              </div>
+            </div>
+
+            {/* Number Snake Game Card */}
+            <div
+              onClick={() => setCurrentGame('number-snake')}
+              className="bg-white rounded-xl shadow-2xl overflow-hidden hover:shadow-3xl hover:scale-105 transition-all transform cursor-pointer group"
+            >
+              <div className="bg-gradient-to-r from-green-400 via-emerald-500 to-teal-600 p-8 text-white">
+                <div className="text-6xl mb-4">🐍🔢📊⬆️⬇️</div>
+                <h2 className="text-2xl font-bold mb-2">Number Snake</h2>
+                <p className="text-sm opacity-90">Master Counting 1 to 100!</p>
+              </div>
+
+              <div className="p-6">
+                <div className="mb-4">
+                  <h3 className="font-semibold text-gray-800 mb-2">📚 Concept:</h3>
+                  <p className="text-gray-600 text-sm">Numbers from 1 to 100 (CBSE Chapter 2)</p>
+                </div>
+
+                <div className="mb-4">
+                  <h3 className="font-semibold text-gray-800 mb-2">🎯 5 Game Types:</h3>
+                  <ul className="text-gray-600 text-sm space-y-1">
+                    <li>⬆️ Type 1: Count Up (1, 2, 3...)</li>
+                    <li>⬇️ Type 2: Count Down (100, 99, 98...)</li>
+                    <li>2️⃣ Type 3: Skip Count by 2s</li>
+                    <li>5️⃣ Type 4: Skip Count by 5s</li>
+                    <li>🔟 Type 5: Skip Count by 10s</li>
+                  </ul>
+                </div>
+
+                <div className="mb-6">
+                  <h3 className="font-semibold text-gray-800 mb-2">💡 How to Play:</h3>
+                  <p className="text-gray-600 text-sm">
+                    Guide the snake to eat numbers in the correct order. Counting up, down, or skip counting!
+                  </p>
+                </div>
+
+                <div className="mb-4 p-3 bg-green-100 rounded-lg border border-green-300">
+                  <p className="text-xs text-green-800 font-semibold">
+                    🐍 Classic Snake Game + Math Learning = Fun!
+                  </p>
+                </div>
+
+                <button className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold py-3 rounded-lg transition-colors">
+                  Play Game →
+                </button>
+              </div>
+            </div>
+
+            {/* Addition Snake Game Card */}
+            <div
+              onClick={() => setCurrentGame('addition-snake')}
+              className="bg-white rounded-xl shadow-2xl overflow-hidden hover:shadow-3xl hover:scale-105 transition-all transform cursor-pointer group"
+            >
+              <div className="bg-gradient-to-r from-blue-400 via-indigo-500 to-purple-600 p-8 text-white">
+                <div className="text-6xl mb-4">🐍➕🧮🎯✨</div>
+                <h2 className="text-2xl font-bold mb-2">Addition Snake</h2>
+                <p className="text-sm opacity-90">Master Addition from 1 to 100!</p>
+              </div>
+
+              <div className="p-6">
+                <div className="mb-4">
+                  <h3 className="font-semibold text-gray-800 mb-2">📚 Concept:</h3>
+                  <p className="text-gray-600 text-sm">Addition within 100 (CBSE Chapter 3)</p>
+                </div>
+
+                <div className="mb-4">
+                  <h3 className="font-semibold text-gray-800 mb-2">🎯 Features:</h3>
+                  <ul className="text-gray-600 text-sm space-y-1">
+                    <li>➕ Addition questions on the snake</li>
+                    <li>🔢 5 answer options to choose from</li>
+                    <li>🎯 Eat the correct answer to grow</li>
+                    <li>🔥 Build streaks for bonus points</li>
+                    <li>📊 3 difficulty levels (Easy/Medium/Hard)</li>
+                  </ul>
+                </div>
+
+                <div className="mb-6">
+                  <h3 className="font-semibold text-gray-800 mb-2">💡 How to Play:</h3>
+                  <p className="text-gray-600 text-sm">
+                    Solve the addition question and guide the snake to eat the correct answer!
+                  </p>
+                </div>
+
+                <div className="mb-4 p-3 bg-indigo-100 rounded-lg border border-indigo-300">
+                  <p className="text-xs text-indigo-800 font-semibold">
+                    🧠 Slow speed for thinking time! Perfect for learning!
+                  </p>
+                </div>
+
+                <button className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-bold py-3 rounded-lg transition-colors">
+                  Play Game →
+                </button>
+              </div>
+            </div>
+
+            {/* Subtraction Snake Game Card */}
+            <div
+              onClick={() => setCurrentGame('subtraction-snake')}
+              className="bg-white rounded-xl shadow-2xl overflow-hidden hover:shadow-3xl hover:scale-105 transition-all transform cursor-pointer group"
+            >
+              <div className="bg-gradient-to-r from-rose-400 via-pink-500 to-red-600 p-8 text-white">
+                <div className="text-6xl mb-4">🐍➖🧮🎯✨</div>
+                <h2 className="text-2xl font-bold mb-2">Subtraction Snake</h2>
+                <p className="text-sm opacity-90">Master Subtraction from 1 to 100!</p>
+              </div>
+
+              <div className="p-6">
+                <div className="mb-4">
+                  <h3 className="font-semibold text-gray-800 mb-2">📚 Concept:</h3>
+                  <p className="text-gray-600 text-sm">Subtraction within 100 (CBSE Chapter 3)</p>
+                </div>
+
+                <div className="mb-4">
+                  <h3 className="font-semibold text-gray-800 mb-2">🎯 Features:</h3>
+                  <ul className="text-gray-600 text-sm space-y-1">
+                    <li>➖ Subtraction questions on the snake</li>
+                    <li>🔢 5 answer options to choose from</li>
+                    <li>🎯 Eat the correct answer to grow</li>
+                    <li>🔥 Build streaks for bonus points</li>
+                    <li>📊 3 difficulty levels (Easy/Medium/Hard)</li>
+                  </ul>
+                </div>
+
+                <div className="mb-6">
+                  <h3 className="font-semibold text-gray-800 mb-2">💡 How to Play:</h3>
+                  <p className="text-gray-600 text-sm">
+                    Solve the subtraction question and guide the snake to eat the correct answer!
+                  </p>
+                </div>
+
+                <div className="mb-4 p-3 bg-rose-100 rounded-lg border border-rose-300">
+                  <p className="text-xs text-rose-800 font-semibold">
+                    🧠 Slow speed for thinking time! Perfect for learning!
+                  </p>
+                </div>
+
+                <button className="w-full bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white font-bold py-3 rounded-lg transition-colors">
                   Play Game →
                 </button>
               </div>
